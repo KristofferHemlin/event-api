@@ -89,21 +89,46 @@ export async function deleteEvent(req, res){
 };
 
 export async function removeUserFromEvent(req, res){
-  const user = await getRepository(User).findOne({id: req.body.userId });
-  const event = await getRepository(Event).findOne({ id: req.body.eventId }, {relations: ['participants']});
+  const user = await getRepository(User).findOne({id: req.body.userId }, {relations: ['events', 'activities']});
+  const event = await getRepository(Event).findOne({ id: req.body.eventId }, {relations: ['participants', 'activities']});
 
-  // finds index of the user and removes it from the event.
-  event.participants.splice(event.participants.indexOf(user), 1);
+  if(!user){
+    return res.send({
+      message: 'No user could be found with that id.',
+    })
+  }
 
-  await getRepository(Event).save(event)
+  if(!event){
+    return res.send({
+      message: 'Could not find any event with that id.',
+    })
+  }
+
+  // Check if the user is a participant of the event.
+  if(!event.participants.find(participant => participant.id === user.id)){
+    return res.send({
+      message: 'The user is not a participant of the event.',
+    });
+  }
+
+
+  // finds index of the event and removes it from the user.
+  user.events.splice(user.events.indexOf(event), 1);
+
+  // Finds all related activites and removes the user from them.
+  user.activities = user.activities.filter(activity => {
+    return event.activities.find(eventActivity => eventActivity.id !== activity.id);
+  })
+
+  await getRepository(User).save(user)
   .then(response => {
     res.send({
-      message: 'User successfully removed from the event!',
+      message: `${user.firstName} ${user.lastName} successfully removed from the ${event.title}.`,
     })
   })
   .catch(error => {
     res.send({
-      message: 'Could not remove the user from the event.',
+      message: `Could not remove ${user.firstName} ${user.lastName} from the event ${event.title}.`,
     })
   })
 }
