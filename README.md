@@ -10,6 +10,13 @@ Claremont Event-app.
 * TypeORM
 * PostgreSQL
 
+## To-dos
+- [] (Re-activate) Lock-down routes that needs authentication.  
+- [] Set up ROLES for USERS.
+- [] Set up PERMISSION for USERS.
+- [] Set up cascade UPDATE / DELETES for several routes.
+
+
 ## Installation
 
 This section is yet to be written...
