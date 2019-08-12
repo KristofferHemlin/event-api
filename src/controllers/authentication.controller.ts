@@ -1,0 +1,84 @@
+import * as bCrypt from 'bcrypt';
+import {getRepository} from "typeorm";
+import * as jwt from 'jsonwebtoken';
+import jwtConfig from '../../jwtConfig';
+// import * as authHelpers from '../helpers/authentication';
+
+import Company from '../entities/company.entity';
+import Account from '../entities/account.entity';
+import User from '../entities/user.entity';
+
+export async function authenticateUser(req, res) {
+  await getRepository(Account).findOne({ email: req.body.email}, {relations: ['user']})
+  .then(account => {
+
+    // If no account could be found.
+    if(!account){
+      return res.status(500).send({
+        message: 'There exists no account for the provided email.',
+      })
+    }
+
+    // If the password is wrong.
+    if(req.body.password === '' || !bCrypt.compareSync(req.body.password, account.password)){
+      return res.status(401).send({
+        message: 'The wrong password was provided.',
+      })
+    }
+
+    // If valid credentials were provided,
+    let payload = {
+      uuid: account.user.id,
+    }
+
+    let token = jwt.sign(payload, jwtConfig.secret, {
+      expiresIn: '24h',
+    });
+
+    res.json({
+      message: 'Authentication successfull! Enjoy your stay!',
+      token: token,
+    });
+
+
+  })
+  .catch(error => {
+    res.send(error);
+  })
+}
+
+export async function signUpNewUser(req, res) {
+
+  // create a company.
+  // create an account.
+  // create a role. *****
+  // Create a user.
+  // assign account into user.
+  // assign company to user.
+  // save user.
+
+  const company = new Company();
+  company.title = req.body.title;
+
+  const user = new User();
+  user.firstName = req.body.firstName || null;
+  user.lastName = req.body.lastName || null;
+  user.email = req.body.email.toLowerCase() || null;
+  user.phone = req.body.phone || null;
+  user.isActive = true;
+  user.company = company;
+
+  const account = new Account();
+  account.email = req.body.email.toLowerCase();
+  account.password = bCrypt.hashSync(req.body.password, 16);
+  account.user = user;
+
+  getRepository(Account).save(account)
+  .then(response => {
+    res.send(response);
+  })
+  .catch(error => {
+    console.log(error);
+    res.send(error);
+  })
+}
