@@ -11,10 +11,10 @@ Claremont Event-app.
 * PostgreSQL
 
 ## To-dos
-- [] (Re-activate) Lock-down routes that needs authentication.  
-- [] Set up ROLES for USERS.
-- [] Set up PERMISSION for USERS.
-- [] Set up cascade UPDATE / DELETES for several routes.
+- [ ] \(Re-activate) Lock-down routes that needs authentication.  
+- [ ] Set up ROLES for USERS.
+- [ ] Set up PERMISSION for USERS.
+- [ ] Set up cascade UPDATE / DELETES for several routes.
 
 
 ## Installation
