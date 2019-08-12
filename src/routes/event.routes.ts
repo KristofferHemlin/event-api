@@ -31,14 +31,14 @@ function setUpEventRoutes(app) {
     userController.addUserToEvent(req, res);
   })
 
-  // Delete an event.
-  app.delete('/events/', (req: express.Request, res: express.Response) => {
-    userController.deleteEvent(req, res);
-  })
-
   // Remove a user from an event.
   app.delete('/events/remove-user', (req: express.Request, res: express.Response) => {
     userController.removeUserFromEvent(req, res);
+  })
+
+  // Delete an event.
+  app.delete('/events/', (req: express.Request, res: express.Response) => {
+    userController.deleteEvent(req, res);
   })
 
 }
