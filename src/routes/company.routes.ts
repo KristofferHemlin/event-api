@@ -30,7 +30,7 @@ function setUpCompanyRoutes(app){
   });
 
   // Remove a user from a company
-  app.post('/companies/:companyId/remove-user', (req: express.Request, res: express.Response) => {
+  app.delete('/companies/:companyId/remove-user', (req: express.Request, res: express.Response) => {
     companyController.removeUserFromCompany(req, res);
   });
 
