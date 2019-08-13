@@ -97,20 +97,20 @@ export async function addCompanyToUser(req, res){
   })
 }
 
-export async function removeCompanyfromUser(req, res){
-  let user = await getRepository(User).findOne({ id: req.body.userId }, { relations: ['company'] });
-
-  let companyTitle = user.company.title
-  user.company = null;
-
-  await getRepository(User).save(user)
-  .then(response => {
-    res.send({
-      message: `User ${user.firstName} ${user.lastName} was successfully removed from the company ${companyTitle}.`,
-    });
-  })
-  .catch(error => {
-    res.send(error);
-  })
-
-}
+// DEPRECATED ** MARKED FOR REMOVAL **
+// export async function removeCompanyfromUser(req, res){
+//   let user = await getRepository(User).findOne({ id: req.body.userId }, { relations: ['company'] });
+//
+//   let companyTitle = user.company.title
+//   user.company = null;
+//
+//   await getRepository(User).save(user)
+//   .then(response => {
+//     res.send({
+//       message: `User ${user.firstName} ${user.lastName} was successfully removed from the company ${companyTitle}.`,
+//     });
+//   })
+//   .catch(error => {
+//     res.send(error);
+//   })
+// }

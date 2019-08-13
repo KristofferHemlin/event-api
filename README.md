@@ -18,8 +18,13 @@ Claremont Event-app.
 - [ ] Set up PERMISSION for ROLES.
 - [ ] Set up cascade UPDATE / DELETES for several routes.
 - [ ] Functionality for uploading of images. (profile photos, event images)
+- [ ] Add company id to the jwt token signing.
+- [ ] Add user role to the jwt token signing.
+- [ ] Add correct error status messages.
+- [x] Fix filter functionality on remove user-from-event-route.
 
 ### Routes
+- [x] Set up DELETE route for events.
 - [ ] Set up DELETE route for activities.
 
 ## Installation

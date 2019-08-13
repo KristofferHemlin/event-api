@@ -24,10 +24,11 @@ function setUpUserRoutes(app){
     userController.addCompanyToUser(req, res);
   });
 
+  // DEPRECATED
   // Remove the company from the user.
-  app.post('/remove-company-from-user', (req: express.Request, res: express.Response) => {
-    userController.removeCompanyfromUser(req, res);
-  });
+  // app.post('/remove-company-from-user', (req: express.Request, res: express.Response) => {
+  //   userController.removeCompanyfromUser(req, res);
+  // });
 
   // Retrieve information for a single logged in user.
   app.get('/users/me', (req: express.Request, res: express.Response) => {
