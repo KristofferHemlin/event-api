@@ -4,12 +4,19 @@ import Event from '../entities/event.entity';
 import User from '../entities/user.entity';
 
 export async function createActivity(req, res) {
-  const event = await getRepository(Event).findOne({id: req.body.eventId});
-  const activity = new Activity();
+  const event = await getRepository(Event).findOne({id: req.body.eventId}, {relations: ['company']});
 
+  if(!event){
+    return res.send({
+      message: 'No event could be found for the provided id.',
+    })
+  }
+
+  const activity = new Activity();
   activity.title = req.body.title;
   activity.description = req.body.description;
   activity.event = event;
+  activity.company = event.company;
 
   getRepository(Activity).save(activity)
   .then(response => {
@@ -17,7 +24,7 @@ export async function createActivity(req, res) {
       message: `Successfully created the activity ${req.body.title}.`
     })
   })
-  .then(error => {
+  .catch(error => {
     return res.send({
       message: `Could not create the activity ${req.body.title}.`
     })
@@ -26,12 +33,12 @@ export async function createActivity(req, res) {
 }
 
 export async function getAllActivities(req, res) {
-  getRepository(Activity).find({relations: ['participants']})
+  getRepository(Activity).find({relations: ['participants', 'company']})
   .then(activities => {
-    res.send(activities);
+    return res.send(activities);
   })
   .then(error => {
-    res.send(error);
+    return res.send(error);
   })
 }
 
@@ -48,22 +55,39 @@ export async function deleteActivity(req, res) {
     res.send(error)
   })
 }
-// FIXME: Temporary function, merge this functionality into the PUT route.
+
 export async function addUserToActivity(req, res){
-  const activity = await getRepository(Activity).findOne({id: req.params.activityId}, {relations: ['participants']});
-  const user = await getRepository(User).findOne({id: req.body.userId});
+  const activity = await getRepository(Activity).findOne({id: req.params.activityId}, {relations: ['participants', 'event']});
+  const user = await getRepository(User).findOne({id: req.body.userId}, {relations: ['events']});
 
-  console.log(user);
-  console.log(activity);
+  // Check so that he activity is not empty.
+  if(!activity){
+    return res.send({
+      message: 'Could not find an activity with the provided id.',
+    })
+  }
 
-  activity.participants.push(user);
+  // Check so that he user is not empty.
+  if(!user){
+    return res.send({
+      message: 'Could not find a user with the provided id.',
+    })
+  }
 
-  getRepository(Activity).save(activity)
-  .then(response => {
-    res.send({message: `Successfully added ${user.firstName} ${user.lastName} to activity ${activity.title}.`})
-  })
-  .catch(error => {
-    res.send(error);
-  })
+  // Check if the user is a member of the the parent event.
+  if (user.events.find(event => event.id === activity.event.id)){
+    activity.participants.push(user);
 
+    getRepository(Activity).save(activity)
+    .then(response => {
+      return res.send({message: `Successfully added ${user.firstName} ${user.lastName} to activity ${activity.title}.`})
+    })
+    .catch(error => {
+      return res.send(error);
+    })
+  } else {
+    return res.send({
+      message: 'The user is not a participant in the activity parent event!',
+    })
+  }
 }
