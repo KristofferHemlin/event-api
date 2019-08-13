@@ -11,21 +11,23 @@ Claremont Event-app.
 * PostgreSQL
 
 ## To-dos
+
+### General 
 - [ ] \(Re-activate) Lock-down routes that needs authentication.
 - [ ] Set up guards for if someone tries to add a user to an activity, when the user is not a participant of the parent event.  
-- [ ] Install "TypeORM Seeding" to add seeding functionality. (Used for ROLES and PERMISSONS)
+- [ ] Install "TypeORM Seeding" to add seeding functionality. (Used for ROLES and PERMISSIONS)
 - [ ] Set up ROLES for USERS.
 - [ ] Set up PERMISSION for ROLES.
 - [ ] Set up cascade UPDATE / DELETES for several routes.
 - [ ] Functionality for uploading of images. (profile photos, event images)
-- [ ] Add company id to the jwt token signing.
-- [ ] Add user role to the jwt token signing.
+- [ ] Add company id to the JWT-token signing.
+- [ ] Add user role to the JWT-token signing.
 - [ ] Add correct error status messages.
 - [x] Fix filter functionality on remove user-from-event-route.
 
 ### Routes
 - [x] Set up DELETE route for events.
-- [ ] Set up DELETE route for activities.
+- [x] Set up DELETE route for activities.
 
 ## Installation
 
