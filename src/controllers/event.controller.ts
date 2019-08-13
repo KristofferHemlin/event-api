@@ -60,8 +60,8 @@ export async function getAllEvents(req, res){
 }
 // FIXME: Implement check to see if user is part of company.
 export async function addUserToEvent(req, res){
-  const user = await getRepository(User).findOne({id: req.body.userId });
-  const event = await getRepository(Event).findOne({ id: req.body.eventId }, {relations: ['participants']});
+  const user = await getRepository(User).findOne({id: req.body.userId }, {relations: ['company']});
+  const event = await getRepository(Event).findOne({ id: req.body.eventId }, {relations: ['participants', 'company']});
 
   if(!user){
     return res.send({
@@ -72,6 +72,19 @@ export async function addUserToEvent(req, res){
   if (!event){
     return res.send({
       message: 'No event exists for the provided id.',
+    })
+  }
+
+  if(!user.company){
+    return res.send({
+      message: 'User is not associated to any company.',
+    })
+  }
+
+  // Check if the user is from the same company.
+  if(user.company.id !== event.company.id){
+    return res.send({
+      message: 'The user is not assigned to the same company as the event!',
     })
   }
 
@@ -92,15 +105,21 @@ export async function addUserToEvent(req, res){
 
 export async function deleteEvent(req, res){
 
-  let theEvent = await getRepository(Event).findOne({id: req.params.eventId }, {relations: ['activities']});
+  let event = await getRepository(Event).findOne({id: req.params.eventId }, {relations: ['activities']});
+
+  if(!event){
+    return res.send({
+      message: 'No event found for the provided id.',
+    })
+  }
 
   // Try to remove the activities first.
-  getRepository(Activity).remove(theEvent.activities)
+  getRepository(Activity).remove(event.activities)
   .then(response => {
-      getRepository(Event).remove(theEvent)
+      getRepository(Event).remove(event)
       .then(response2 => {
         return res.send({
-          message: `The event ${theEvent.title} was deleted.`,
+          message: `The event ${event.title} was deleted.`,
         })
       })
       .catch(error2 => {
@@ -120,12 +139,14 @@ export async function removeUserFromEvent(req, res){
   const user = await getRepository(User).findOne({id: req.body.userId }, {relations: ['events', 'activities']});
   const event = await getRepository(Event).findOne({ id: req.body.eventId }, {relations: ['participants', 'activities']});
 
+  // ...Check if the user was empty.
   if(!user){
     return res.send({
       message: 'No user could be found with that id.',
     })
   }
 
+  // ...Check if the event was empty.
   if(!event){
     return res.send({
       message: 'Could not find any event with that id.',
@@ -138,7 +159,6 @@ export async function removeUserFromEvent(req, res){
       message: 'The user is not a participant of the event.',
     });
   }
-
 
   // finds index of the event and removes it from the user.
   user.events.splice(user.events.indexOf(event), 1);
@@ -153,8 +173,6 @@ export async function removeUserFromEvent(req, res){
       }
     })
   })
-
-
 
   await getRepository(User).save(user)
   .then(response => {
