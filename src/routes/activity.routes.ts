@@ -21,7 +21,7 @@ function setUpActivityRoutes(app) {
     activityController.getAllActivities(req, res);
   })
 
-  app.delete('/activities/activityId', (req: express.Request, res: express.Response) => {
+  app.delete('/activities/:activityId', (req: express.Request, res: express.Response) => {
     activityController.deleteActivity(req, res);
   })
 
