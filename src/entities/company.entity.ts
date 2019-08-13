@@ -9,6 +9,7 @@ import {
 
 import User from './user.entity';
 import Event from './event.entity';
+import Activity from './activity.entity';
 
 @Entity()
 class Company {
@@ -31,6 +32,8 @@ class Company {
   @OneToMany(type => Event, event => event.company)
   events: Event[];
 
+  @OneToMany(type => Activity, activity => activity.company)
+  activities: Activity[];
 }
 
 export default Company;

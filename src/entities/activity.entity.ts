@@ -11,6 +11,7 @@ import {
 
 import Event from './event.entity';
 import User from './user.entity';
+import Company from './company.entity';
 
 @Entity()
 class Activity {
@@ -36,6 +37,8 @@ class Activity {
   @ManyToMany(type => User, user => user.activities)
   participants: User[];
 
+  @ManyToOne(type => Company, company => company.activities, {cascade: true})
+  company: Company;
 }
 
 export default Activity;
