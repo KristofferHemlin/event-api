@@ -92,8 +92,6 @@ export async function removeUserFromCompany(req, res) {
   }
 }
 
-
-
 export async function deleteCompany(req, res){
   let company = await getRepository(Company).findOne({ id: req.params.companyId });
   await getRepository(Company).remove(company)

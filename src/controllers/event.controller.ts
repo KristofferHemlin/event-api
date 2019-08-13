@@ -2,34 +2,30 @@ import {getRepository} from "typeorm";
 import Event from '../entities/event.entity';
 import Company from '../entities/company.entity';
 import User from '../entities/user.entity';
+import Activity from '../entities/activity.entity';
 
 export async function createEvent(req, res) {
-  getRepository(Company).findOne({ id: req.body.companyId },{relations: ['events']})
-  .then(company => {
+  let company = await getRepository(Company).findOne({ id: req.body.companyId },{relations: ['events']});
 
-    if(!company){
-      return res.status(500).send({
-        message: 'No company was found with the provided company id.',
-      });
-    }
+  if(!company){
+    return res.status(500).send({
+      message: 'No company was found with the provided company id.',
+    });
+  }
 
-    const event = new Event();
-    event.title = req.body.title;
-    event.description = req.body.description;
-    event.company = company;
+  const event = new Event();
+  event.title = req.body.title;
+  event.description = req.body.description;
+  event.company = company;
 
-    getRepository(Event).save(event)
-    .then(response => {
-      return res.send({
-        message: 'Successfully saved the event.',
-      })
-    })
-    .catch(error => {
-      res.send(error);
+  getRepository(Event).save(event)
+  .then(response => {
+    return res.send({
+      message: `Successfully saved the event ${event.title}.`,
     })
   })
   .catch(error => {
-    res.send(error);
+    return res.send(error);
   })
 }
 
@@ -62,29 +58,61 @@ export async function getAllEvents(req, res){
     res.send(error);
   })
 }
-
+// FIXME: Implement check to see if user is part of company.
 export async function addUserToEvent(req, res){
   const user = await getRepository(User).findOne({id: req.body.userId });
   const event = await getRepository(Event).findOne({ id: req.body.eventId }, {relations: ['participants']});
+
+  if(!user){
+    return res.send({
+      message: 'No user exists for the provided id.',
+    })
+  }
+
+  if (!event){
+    return res.send({
+      message: 'No event exists for the provided id.',
+    })
+  }
 
   event.participants.push(user);
 
   await getRepository(Event).save(event)
   .then(response => {
     res.send({
-      message: 'User successfully added to the event!',
+      message: `${user.firstName} ${user.lastName} successfully added to the event ${event.title}!`,
     })
   })
   .catch(error => {
     res.send({
-      message: 'Could not add the user to the event.',
+      message: `Could not add the user ${user.firstName} ${user.lastName} to the event ${event.title}.`,
     })
   })
 }
 
 export async function deleteEvent(req, res){
-  res.send({
-    message: 'Route not yet developed!',
+
+  let theEvent = await getRepository(Event).findOne({id: req.params.eventId }, {relations: ['activities']});
+
+  // Try to remove the activities first.
+  getRepository(Activity).remove(theEvent.activities)
+  .then(response => {
+      getRepository(Event).remove(theEvent)
+      .then(response2 => {
+        return res.send({
+          message: `The event ${theEvent.title} was deleted.`,
+        })
+      })
+      .catch(error2 => {
+        return res.send({
+          message: error2,
+        })
+      })
+  })
+  .catch(error => {
+    return res.send({
+      message: error,
+    })
   })
 };
 
@@ -117,8 +145,16 @@ export async function removeUserFromEvent(req, res){
 
   // Finds all related activites and removes the user from them.
   user.activities = user.activities.filter(activity => {
-    return event.activities.find(eventActivity => eventActivity.id !== activity.id);
+    event.activities.forEach(eventActivity => {
+      if (activity.id === eventActivity.id){
+        return;
+      } else {
+        return activity;
+      }
+    })
   })
+
+
 
   await getRepository(User).save(user)
   .then(response => {
