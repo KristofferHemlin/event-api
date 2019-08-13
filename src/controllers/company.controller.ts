@@ -17,7 +17,7 @@ export async function createCompany(req, res) {
 }
 
 export async function getAllCompanies(req, res) {
-  await getRepository(Company).find({relations: ['employees', 'events']})
+  await getRepository(Company).find({relations: ['employees', 'events', 'activities']})
   .then(response => {
     res.send(response);
   })
