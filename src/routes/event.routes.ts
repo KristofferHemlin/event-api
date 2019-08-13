@@ -37,7 +37,7 @@ function setUpEventRoutes(app) {
   })
 
   // Delete an event.
-  app.delete('/events/', (req: express.Request, res: express.Response) => {
+  app.delete('/events/:eventId', (req: express.Request, res: express.Response) => {
     userController.deleteEvent(req, res);
   })
 
