@@ -50,6 +50,11 @@ function setUpUserRoutes(app){
     userController.deleteUser(req, res);
   });
 
+  // Invite multiple user by uploaded ".xlx" file. 
+  app.post('/users/invite-multiple', (req: express.Request, res: express.Response) => {
+    userController.inviteMultipleUsers(req, res);
+  });
+
 }
 
 export default setUpUserRoutes;
