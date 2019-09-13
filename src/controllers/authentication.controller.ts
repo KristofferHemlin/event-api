@@ -9,42 +9,43 @@ import Account from '../entities/account.entity';
 import User from '../entities/user.entity';
 
 export async function authenticateUser(req, res) {
-  await getRepository(Account).findOne({ email: req.body.email}, {relations: ['user']})
-  .then(account => {
 
-    // If no account could be found.
-    if(!account){
-      return res.status(500).send({
-        message: 'There exists no account for the provided email.',
-      })
-    }
+  let account = await getRepository(Account).findOne({ email: req.body.email}, {relations: ['user']})
 
-    // If the password is wrong.
-    if(req.body.password === '' || !bCrypt.compareSync(req.body.password, account.password)){
-      return res.status(401).send({
-        message: 'The wrong password was provided.',
-      })
-    }
+  // If no account could be found.
+  if(!account){
+    return res.status(500).send({
+      message: 'There exists no account for the provided email.',
+    })
+  }
 
-    // If valid credentials were provided,
-    let payload = {
-      uuid: account.user.id,
-    }
+  // If the password is wrong.
+  if(req.body.password === '' || !bCrypt.compareSync(req.body.password, account.password)){
+    return res.status(401).send({
+      message: 'The wrong password was provided.',
+    })
+  }
 
-    let token = jwt.sign(payload, jwtConfig.secret, {
-      expiresIn: '24h',
-    });
+  let user = await getRepository(User).findOne({ id: account.user.id }, {relations: ['company']});
 
-    res.json({
-      message: 'Authentication successfull! Enjoy your stay!',
-      token: token,
-    });
+  // If valid credentials were provided,
+  let payload = {
+    user_id: account.user.id,
+    company_id: user.company.id,
+    role: 'ADMIN'
+  }
 
+  console.log(payload);
 
-  })
-  .catch(error => {
-    res.send(error);
-  })
+  let token = jwt.sign(payload, jwtConfig.secret, {
+    expiresIn: '24h',
+  });
+
+  res.json({
+    message: 'Authentication successfull! Enjoy your stay!',
+    token: token,
+  });
+
 }
 
 export async function signUpNewUser(req, res) {
