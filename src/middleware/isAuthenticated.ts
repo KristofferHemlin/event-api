@@ -3,6 +3,10 @@ import jwtConfig from '../../jwtConfig';
 
 export default (req, res, next) => {
 
+  if(req.method === 'OPTIONS'){
+    next();
+  }
+
   // Check for token.
   const token = req.body.token || req.query.token || req.headers['x-access-token'] || req.headers.authorization;
 
