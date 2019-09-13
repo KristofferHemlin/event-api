@@ -1,4 +1,4 @@
-import {getRepository} from "typeorm";
+import {getRepository, Equal} from "typeorm";
 import Event from '../entities/event.entity';
 import Company from '../entities/company.entity';
 import User from '../entities/user.entity';
@@ -50,13 +50,25 @@ export async function updateEvent(req, res){
 }
 
 export async function getAllEvents(req, res){
-  getRepository(Event).find({relations: ['participants', 'activities']})
-  .then(events => {
-    res.send(events);
-  })
-  .catch(error => {
-    res.send(error);
-  })
+
+  console.log(res.decoded);
+  if (req.decoded.role === 'ADMIN') {
+    getRepository(Event).find({relations: ['participants', 'activities', 'company']})
+    .then(events => {
+      res.send(events);
+    })
+    .catch(error => {
+      res.send(error);
+    })
+  } else {
+    // FIXME: Fetch all events belonging to one company.
+    getRepository(Event).find({ company: Equal(req.decoded.company_id)})
+    .then(events => {
+      console.log(events);
+      res.send(events)
+    })
+    .catch(error => res.send(error))
+  }
 }
 // FIXME: Implement check to see if user is part of company.
 export async function addUserToEvent(req, res){

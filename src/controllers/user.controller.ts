@@ -31,8 +31,8 @@ export async function getAllUsers(req, res) {
 }
 
 export async function getUserInfoForCurrentUser(req, res) {
-  console.log(req.decoded);
-  await getRepository(User).findOne({ id: req.decoded.uuid }, {relations: ['company', 'activities', 'events']})
+  console.log('decoded:', req.decoded);
+  await getRepository(User).findOne({ id: req.decoded.user_id }, {relations: ['company', 'activities', 'events']})
   .then(user => {
     res.send(user);
   })
@@ -43,7 +43,7 @@ export async function getUserInfoForCurrentUser(req, res) {
 
 
 export async function getUserById(req, res){
-  await getRepository(User).findOne({ id: req.params.userId })
+  await getRepository(User).findOne({ id: req.params.userId }, {relations: ['company', 'activities', 'events']})
   .then(response => {
     res.send(response);
   })
