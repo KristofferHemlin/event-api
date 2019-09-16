@@ -2,6 +2,25 @@ import User from '../entities/user.entity';
 import Company from '../entities/company.entity';
 import {getRepository} from "typeorm";
 
+import * as excelToJson from 'convert-excel-to-json';
+
+import * as multer from 'multer';
+
+// Multer file upload handling.
+var storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, 'public')
+    },
+    filename: function (req, file, cb) {
+      cb(null, Date.now() + '-' +file.originalname )
+    }
+})
+
+var upload = multer({
+  storage: storage,
+}).single('image')
+
+
 export async function createUser(req, res) {
 
   let user = new User();
@@ -98,8 +117,17 @@ export async function addCompanyToUser(req, res){
 }
 
 export async function inviteMultipleUsers(req, res){
-  console.log(req.body);
-  res.send({
-    response: req.body
-  });
+  upload(req, res, function (err) {
+    if (err instanceof multer.MulterError) {
+      res.send(err)
+    } else if (err) {
+      res.send(err)
+    }
+
+    const result = excelToJson({
+      sourceFile: req.file.path
+    });
+
+    res.status(200).send(result)
+  })
 }
