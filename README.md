@@ -33,7 +33,6 @@ Claremont Event-app.
 
   `cd event-api`
 
-<<<<<<< HEAD
   ... then while standing in the root folder, type in the following:
 
   `npm install`
@@ -52,15 +51,6 @@ Claremont Event-app.
 
   ### 4. Set up a local PostgreSQL database.
   W.I.P
-=======
-  ... then while standing in the root folder, type in the following.
-
-  `npm install`
-
-* Create a ".env" file.
-* Create an "ormconfig.json" file.
-* Create a "jwtConfig.ts" file.
->>>>>>> b9841de7c1bd4cb16d15db400bf61f38b5df8ee1
 
 ## To-dos
 
