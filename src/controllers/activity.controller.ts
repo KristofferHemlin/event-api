@@ -37,7 +37,7 @@ export async function getAllActivities(req, res) {
   .then(activities => {
     return res.send(activities);
   })
-  .then(error => {
+  .catch(error => {
     return res.send(error);
   })
 }

@@ -2,6 +2,8 @@ import * as express from 'express';
 import * as bodyParser from 'body-parser';
 import { createConnection } from 'typeorm';
 
+import * as multer from 'multer';
+
 import setUpUserRoutes from './routes/user.routes';
 import setUpCompanyRoutes from './routes/company.routes';
 import setUpAuthenticationRoutes from './routes/authentication.routes';

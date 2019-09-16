@@ -2,3 +2,6 @@ node_modules
 .env
 ormconfig.json
 jwtConfig.ts
+src/doc
+src/.DS_Store
+.DS_Store
