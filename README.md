@@ -26,7 +26,7 @@ Claremont Event-app.
   pasting it in your terminal at the location you want to place the local
   repository.
 
-  `git clone git@github.com:Zyntox/event-api.git`
+  `git clone https://github.com/Zyntox/event-api.git`
 
   ### 2. Install Dependencies
   Navigate into the repository.
