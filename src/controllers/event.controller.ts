@@ -50,25 +50,13 @@ export async function updateEvent(req, res){
 }
 
 export async function getAllEvents(req, res){
-
-  console.log(res.decoded);
-  if (req.decoded.role === 'ADMIN') {
-    getRepository(Event).find({relations: ['participants', 'activities', 'company']})
-    .then(events => {
-      res.send(events);
-    })
-    .catch(error => {
-      res.send(error);
-    })
-  } else {
-    // FIXME: Fetch all events belonging to one company.
-    getRepository(Event).find({ company: Equal(req.decoded.company_id)})
-    .then(events => {
-      console.log(events);
-      res.send(events)
-    })
-    .catch(error => res.send(error))
-  }
+  getRepository(Event).find({relations: ['participants', 'activities', 'company']})
+  .then(events => {
+    res.send(events);
+  })
+  .catch(error => {
+    res.send(error);
+  })
 }
 
 export async function getEventParticipants(req, res) {
