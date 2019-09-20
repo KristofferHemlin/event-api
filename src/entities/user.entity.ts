@@ -59,7 +59,7 @@ class User {
   @ManyToOne(type => Company, company => company.employees, {cascade: true})
   company: Company;
 
-  @ManyToMany(type => Event, event => event.participants)
+  @ManyToMany(type => Event, event => event.participants, {cascade: true})
   @JoinTable()
   events: Event[];
 
