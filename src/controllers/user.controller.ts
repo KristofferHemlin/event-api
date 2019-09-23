@@ -1,6 +1,7 @@
 import User from '../entities/user.entity';
 import Company from '../entities/company.entity';
-import {getRepository} from "typeorm";
+import {getRepository, getConnection} from "typeorm";
+import {Request, Response} from 'express';
 
 import * as excelToJson from 'convert-excel-to-json';
 
@@ -130,4 +131,20 @@ export async function inviteMultipleUsers(req, res){
 
     res.status(200).send(result)
   })
+}
+
+export async function getUserEventActivities(req: Request , res: Response) {
+  getConnection()
+    .createQueryBuilder("Activity", "activity")
+    .innerJoin("activity.participants", "ap", "ap.id=:userId", {userId: req.params.userId})
+    .where("activity.event=:eventId", {eventId: req.params.eventId})
+    .getMany()
+    .then(
+      result => {
+        res.status(200).send(result);
+      }, 
+      error => {
+        res.status(500).send();
+        console.log("An error occurred when processing the query: "+error);
+      });
 }

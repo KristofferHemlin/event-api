@@ -5,9 +5,9 @@ import isAuthenticated from '../middleware/isAuthenticated';
 function setUpUserRoutes(app){
 
   // Middleware
-  // app.use('/users', (req, res, next) => {
-  //   isAuthenticated(req, res, next);
-  // })
+   app.use('/users', (req, res, next) => {
+     isAuthenticated(req, res, next);
+   })
 
 
 
@@ -183,6 +183,20 @@ function setUpUserRoutes(app){
     userController.inviteMultipleUsers(req, res);
   });
 
+  
+    /**
+  * @api {get} /event/activities/ Get all activities during the event for user 
+  * @apiName GetUserEventActivities
+  * @apiGroup User
+  *
+  * @apiParam {Number} eventId The unique identifier of the event.
+  * @apiParam {Number} userId The id for the current user 
+  */
+
+  // Get all activities during given event
+  app.get('/users/:userId/events/:eventId/activities', (req: express.Request, res: express.Response) => {
+    userController.getUserEventActivities(req, res);
+  });
 }
 
 export default setUpUserRoutes;
