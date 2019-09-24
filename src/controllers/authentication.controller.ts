@@ -7,6 +7,7 @@ import jwtConfig from '../../jwtConfig';
 import Company from '../entities/company.entity';
 import Account from '../entities/account.entity';
 import User from '../entities/user.entity';
+import Role from '../entities/role.entity';
 
 export async function authenticateUser(req, res) {
 
@@ -52,11 +53,13 @@ export async function signUpNewUser(req, res) {
 
   // create a company.
   // create an account.
-  // create a role. *****
-  // Create a user.
+  // add a role.
+  // create a user.
   // assign account into user.
   // assign company to user.
   // save user.
+
+  const role = await getRepository(Role).findOneOrFail({ role: "COMPANY_MANAGER" });
 
   const company = new Company();
   company.title = req.body.title;
@@ -68,6 +71,7 @@ export async function signUpNewUser(req, res) {
   user.phone = req.body.phone || null;
   user.isActive = true;
   user.company = company;
+  user.role = role;
 
   const account = new Account();
   account.email = req.body.email.toLowerCase();
