@@ -5,4 +5,4 @@ jwtConfig.ts
 src/doc
 src/.DS_Store
 .DS_Store
-seeds/convertedCSV
+src/seeds/convertedCSV.json
