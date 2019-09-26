@@ -1,15 +1,18 @@
 import {MigrationInterface, QueryRunner, getRepository, Repository} from "typeorm";
+import * as bCrypt from 'bcrypt';
 import User from '../entities/user.entity';
 import Company from '../entities/company.entity';
 import Event from '../entities/event.entity';
 import Activity from '../entities/activity.entity';
+import Account from '../entities/account.entity';
+import Role from '../entities/role.entity';
 
 // Seed files.
 const JSON = require('../seeds/convertedCSV.json');
 import companySeed from '../seeds/company.seed';
 
 
-export class setUpInitialEntities1568935686317 implements MigrationInterface {
+export class setUpInitialEntities1569509225340 implements MigrationInterface {
 
     public async up(queryRunner: QueryRunner): Promise<any> {
         
@@ -43,9 +46,14 @@ export class setUpInitialEntities1568935686317 implements MigrationInterface {
         // 4. Get the newly created Event from the DB.
         const createdEvent = await getRepository(Event).findOne({title: theEvent.title});
 
+        // 4.5 Get role entity created from previous seed file. 
+        const memberRole = await getRepository(Role).findOne({ role: 'COMPANY_MEMBER' });
+        console.log(memberRole);
+
         // 5. Sets up the users (+ add the event and company to the user).
         let formattedUsers = [];
         await JSON.forEach(user => {
+
             let formattedUser = {
                 firstName: user.firstName,
                 lastName: user.lastName,
@@ -53,7 +61,8 @@ export class setUpInitialEntities1568935686317 implements MigrationInterface {
                 phone: user.phone,
                 isActive: false,
                 company: createdCompany,
-                events: [],
+                role: memberRole,
+                events: [], 
                 activities: [],
             }
             formattedUser.activities.push(createdActivity);
@@ -61,6 +70,7 @@ export class setUpInitialEntities1568935686317 implements MigrationInterface {
             formattedUsers.push(formattedUser);
         })
         await getRepository(User).save(formattedUsers);
+
     }
 
     public async down(queryRunner: QueryRunner): Promise<any> {
@@ -71,10 +81,10 @@ export class setUpInitialEntities1568935686317 implements MigrationInterface {
             const fetchedUser = await getRepository(User).findOne({email: user.email})
             listOfUsers.push(fetchedUser);
         }))
-
         await getAllInitialUsers();
+        console.log('Got all the user.');
 
-
+        console.log('trying to remove the users...')
         // Removes all the initial users from the database. 
         await getRepository(User).remove(listOfUsers);
         console.log('Removed all default Claremont users.');

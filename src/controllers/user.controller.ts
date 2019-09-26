@@ -41,7 +41,7 @@ export async function createUser(req, res) {
 }
 
 export async function getAllUsers(req, res) {
- await getRepository(User).find({relations: ['company', 'events', 'activities']})
+ await getRepository(User).find({relations: ['company', 'events', 'activities', 'role']})
  .then(response => {
   res.send(response);
  })

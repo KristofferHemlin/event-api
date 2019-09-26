@@ -53,7 +53,7 @@ class User {
   @Column({ select: false })  
   password: string;
 
-  @ManyToOne(type => Role, role => role.users)
+  @ManyToOne(type => Role, role => role.users, {cascade: true})
   role: Role;
 
   @ManyToOne(type => Company, company => company.employees, {cascade: true})
