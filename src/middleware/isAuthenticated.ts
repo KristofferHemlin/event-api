@@ -1,5 +1,4 @@
 import * as jwt from 'jsonwebtoken';
-import jwtConfig from '../../jwtConfig';
 
 export default (req, res, next) => {
 
@@ -12,7 +11,7 @@ export default (req, res, next) => {
 
   //If there is a token, try to decode the it.
   if(token){
-    jwt.verify(token, jwtConfig.secret, (err, decoded) => {
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
       if(err){
         return res.send(err)
       } else {
