@@ -1,5 +1,6 @@
 import * as express from 'express';
 import * as authenticationController from '../controllers/authentication.controller';
+import isAuthenticated from '../middleware/isAuthenticated';
 
 function setUpAuthenticationRoutes(app){
 
@@ -47,6 +48,26 @@ function setUpAuthenticationRoutes(app){
   app.post('/sign-up-new-user', (req: express.Request, res: express.Response) => {
     authenticationController.signUpNewUser(req, res);
   });
+
+
+/**
+  * @api {post} /account/:userId/password Change user password
+  *
+  * @apiDescription This route changes the password for the current user. Verification with token.
+  *
+  * @apiName ChangeUserPassword
+  * @apiGroup Authentication
+  *
+  * @apiParam currentPassword The current user password
+  * @apiParam newPassword The new password
+  */
+
+  // Change password
+  app.post('/account/password', 
+    isAuthenticated,
+    (req, res) => {
+      authenticationController.changeUserPassword(req, res);
+    });
 
 }
 

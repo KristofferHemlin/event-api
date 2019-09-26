@@ -1,5 +1,5 @@
 import * as bCrypt from 'bcrypt';
-import {getRepository} from "typeorm";
+import {getRepository, createQueryBuilder} from "typeorm";
 import * as jwt from 'jsonwebtoken';
 // import * as authHelpers from '../helpers/authentication';
 
@@ -85,4 +85,37 @@ export async function signUpNewUser(req, res) {
     console.log(error);
     res.send(error);
   })
+}
+
+export async function changeUserPassword(req, res) {
+
+  let account = await createQueryBuilder(Account)
+  .innerJoin("Account.user", "au")
+  .where("au.id=:userId", {userId: req.decoded.user_id})
+  .getOne();
+
+  if (account) {
+    // Verify current password
+    let currentPwd = req.body.currentPassword;
+    bCrypt.compare(currentPwd, account.password)
+      .then( isMatch => {
+        if (isMatch) {
+          // Verify the new password is different from current
+          let newPwd = req.body.newPassword;
+          if (newPwd && (newPwd !== currentPwd)) {
+            // The new password is added to the account
+            account.password = bCrypt.hashSync(newPwd, parseInt(process.env.SALT_ROUNDS, 10));
+            getRepository(Account).save(account)
+            .then(_ => res.status(200).send({message: "Password changed"}))
+            .catch(_ => res.status(500).send({message: "The password could not be changed"}));
+          } else {
+            res.status(400).send({message: "The new password is not valid"})
+            }
+        } else {
+          res.status(400).send({message: "The current password is wrong"})
+          }
+      }, _ => res.status(400).send({message: "Cannot change password without current password"}));
+  } else {
+    res.status(400).send({message: "The user account does not exist"})
+  }
 }
