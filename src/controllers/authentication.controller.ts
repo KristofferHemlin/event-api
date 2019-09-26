@@ -1,7 +1,6 @@
 import * as bCrypt from 'bcrypt';
 import {getRepository} from "typeorm";
 import * as jwt from 'jsonwebtoken';
-import jwtConfig from '../../jwtConfig';
 // import * as authHelpers from '../helpers/authentication';
 
 import Company from '../entities/company.entity';
@@ -38,7 +37,7 @@ export async function authenticateUser(req, res) {
 
   console.log(payload);
 
-  let token = jwt.sign(payload, jwtConfig.secret, {
+  let token = jwt.sign(payload, process.env.JWT_SECRET, {
     expiresIn: '24h',
   });
 
@@ -75,7 +74,7 @@ export async function signUpNewUser(req, res) {
 
   const account = new Account();
   account.email = req.body.email.toLowerCase();
-  account.password = bCrypt.hashSync(req.body.password, 16);
+  account.password = bCrypt.hashSync(req.body.password, parseInt(process.env.SALT_ROUNDS, 10));
   account.user = user;
 
   getRepository(Account).save(account)
