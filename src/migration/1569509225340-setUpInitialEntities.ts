@@ -4,7 +4,6 @@ import User from '../entities/user.entity';
 import Company from '../entities/company.entity';
 import Event from '../entities/event.entity';
 import Activity from '../entities/activity.entity';
-import Account from '../entities/account.entity';
 import Role from '../entities/role.entity';
 
 // Seed files.
@@ -52,6 +51,9 @@ export class setUpInitialEntities1569509225340 implements MigrationInterface {
 
         // 5. Sets up the users (+ add the event and company to the user).
         let formattedUsers = [];
+        
+        const hashed_password = bCrypt.hashSync('kroatien19', parseInt(process.env.SALT_ROUNDS, 10));
+
         await JSON.forEach(user => {
 
             let formattedUser = {
@@ -59,7 +61,9 @@ export class setUpInitialEntities1569509225340 implements MigrationInterface {
                 lastName: user.lastName,
                 email: user.email,
                 phone: user.phone,
+                signupComplete: false,
                 isActive: false,
+                password: hashed_password,
                 company: createdCompany,
                 role: memberRole,
                 events: [], 
@@ -90,8 +94,10 @@ export class setUpInitialEntities1569509225340 implements MigrationInterface {
         console.log('Removed all default Claremont users.');
 
         // Removes all the acativities.
+        console.log('Trying to remove the activity.')
         const fetchedActivity = await getRepository(Activity).findOne({ title: 'Hiking i Bergen av Split'});
         await getRepository(Activity).remove(fetchedActivity);
+        console.log('Removed the activity!');
 
         // Remove the Event.
         const fetchedEvent = await getRepository(Event).findOne({ title: 'Claremont i Kroatien' });
