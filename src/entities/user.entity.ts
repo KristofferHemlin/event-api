@@ -13,7 +13,6 @@ import {
 
 import Company from './company.entity';
 import Role from './role.entity';
-import Account from './account.entity'; // FIXME: Might be deprecated...
 import Event from './event.entity';
 import Activity from './activity.entity';
 
@@ -48,8 +47,8 @@ class User {
   @Column()
   isActive: boolean;
 
-  @OneToOne(type => Account)
-  account: Account;
+  @Column()  
+  password: string;
 
   @ManyToOne(type => Role, role => role.users)
   role: Role;
