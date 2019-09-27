@@ -6,13 +6,16 @@ import * as jwt from 'jsonwebtoken';
 import Company from '../entities/company.entity';
 import User from '../entities/user.entity';
 import Role from '../entities/role.entity';
+import Account from '../entities/account.entity';
 
 export async function authenticateUser(req, res) {
 
   let theUser = await getRepository(User)
     .createQueryBuilder()
-    .addSelect('password')
-    .where("user.email = :email", { email: req.body.email })
+    .addSelect('User.password')
+    .leftJoinAndSelect("User.company", "company")
+    .leftJoinAndSelect("User.role", "role")
+    .where("User.email = :email", { email: req.body.email })
     .getOne();
 
   // If no user could be found.
@@ -36,7 +39,7 @@ export async function authenticateUser(req, res) {
     role: theUser.role
   }
 
-  console.log(payload);
+  theUser.password = undefined;
 
   let token = jwt.sign(payload, process.env.JWT_SECRET, {
     expiresIn: '24h',
