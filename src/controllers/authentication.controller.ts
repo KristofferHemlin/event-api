@@ -9,7 +9,11 @@ import Role from '../entities/role.entity';
 
 export async function authenticateUser(req, res) {
 
-  let theUser = await getRepository(User).findOne({ email: req.body.email},{relations: ['company']});
+  let theUser = await getRepository(User)
+    .createQueryBuilder()
+    .addSelect('password')
+    .where("user.email = :email", { email: req.body.email })
+    .getOne();
 
   // If no user could be found.
   if(!theUser){
@@ -65,6 +69,7 @@ export async function signUpNewUser(req, res) {
   user.email = req.body.email.toLowerCase() || null;
   user.phone = req.body.phone || null;
   user.password = bCrypt.hashSync(req.body.password, parseInt(process.env.SALT_ROUNDS, 10));
+  user.signupComplete = false;
   user.isActive = true;
   user.company = company;
   user.role = role;

@@ -45,9 +45,12 @@ class User {
   email: string;
 
   @Column()
+  signupComplete: boolean;
+
+  @Column()
   isActive: boolean;
 
-  @Column()  
+  @Column({ select: false })  
   password: string;
 
   @ManyToOne(type => Role, role => role.users)
