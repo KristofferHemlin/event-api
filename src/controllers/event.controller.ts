@@ -1,4 +1,4 @@
-import {getRepository, Equal} from "typeorm";
+import {getRepository, Equal, createQueryBuilder} from "typeorm";
 import Event from '../entities/event.entity';
 import Company from '../entities/company.entity';
 import User from '../entities/user.entity';
@@ -70,6 +70,16 @@ export async function getAllEvents(req, res){
     .catch(error => res.send(error))
   }
 }
+
+export async function getEventParticipants(req, res) {
+  // get all users on specified event
+  createQueryBuilder(User)
+    .innerJoin("User.events", "ue", "ue.id=:eventId", {eventId: req.params.eventId})
+    .getMany()
+    .then(response => res.status(200).send(response), error => {console.log(error); res.status(500).send({message: "Could not fetch event participants"})})
+}
+
+
 // FIXME: Implement check to see if user is part of company.
 export async function addUserToEvent(req, res){
   const user = await getRepository(User).findOne({id: req.body.userId }, {relations: ['company']});

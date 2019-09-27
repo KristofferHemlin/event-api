@@ -1,5 +1,5 @@
 import * as express from 'express';
-import * as userController from '../controllers/event.controller';
+import * as eventController from '../controllers/event.controller';
 import isAuthenticated from '../middleware/isAuthenticated';
 
 function setUpEventRoutes(app) {
@@ -23,7 +23,7 @@ function setUpEventRoutes(app) {
 
   // Create a new event.
   app.post('/events', (req: express.Request, res: express.Response) => {
-    userController.createEvent(req, res);
+    eventController.createEvent(req, res);
   });
 
 
@@ -41,7 +41,7 @@ function setUpEventRoutes(app) {
 
   // Update an event.
   app.put('/events', (req: express.Request, res: express.Response) => {
-    userController.updateEvent(req, res);
+    eventController.updateEvent(req, res);
   })
 
 
@@ -58,8 +58,19 @@ function setUpEventRoutes(app) {
 
   // Fetch all events.
   app.get('/events', (req: express.Request, res: express.Response) => {
-    userController.getAllEvents(req, res);
+    eventController.getAllEvents(req, res);
   });
+
+  /**
+   * @api {get} /events/:eventId/users
+   * @apiDescription This route fetches all user for the specified event. 
+   * @apiName GetEventParticipants
+   * @apiGroup Event
+   * @apiParam {Number} eventId Unique identifier for the event
+   */
+
+  // Fetch all users on an event
+  app.get("/events/:eventId/users", eventController.getEventParticipants);
 
 
   /**
@@ -72,7 +83,7 @@ function setUpEventRoutes(app) {
 
   // Add a user to an Event.
   app.post('/events/add-user', (req: express.Request, res: express.Response) => {
-    userController.addUserToEvent(req, res);
+    eventController.addUserToEvent(req, res);
   })
 
 
@@ -89,7 +100,7 @@ function setUpEventRoutes(app) {
 
   // Remove a user from an event.
   app.delete('/events/remove-user', (req: express.Request, res: express.Response) => {
-    userController.removeUserFromEvent(req, res);
+    eventController.removeUserFromEvent(req, res);
   })
 
 
@@ -105,7 +116,7 @@ function setUpEventRoutes(app) {
 
   // Delete an event.
   app.delete('/events/:eventId', (req: express.Request, res: express.Response) => {
-    userController.deleteEvent(req, res);
+    eventController.deleteEvent(req, res);
   })
 
 }
