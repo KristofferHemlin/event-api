@@ -19,6 +19,18 @@ function setUpActivityRoutes(app) {
     activityController.getAllActivities(req, res);
   })
 
+  /**
+  * @api {get} /activities/:activityId Get the specified activity.
+  * @apiName GetActivity
+  * @apiGroup Activity
+  * 
+  * @apiParam {Number} activityId The unique identifier of the parent event.
+  */
+
+ app.get('/activities/:activityId', (req: express.Request, res: express.Response) => {
+  activityController.getActivity(req, res);
+})
+
 
 
   /**

@@ -42,6 +42,11 @@ export async function getAllActivities(req, res) {
   })
 }
 
+export async function getActivity(req, res) {
+  getRepository(Activity).findOne({id: req.params.activityId})
+    .then(activity => res.status(200).send(activity), error => res.status(500).send({message: "The activity could not be fetched."}));
+}
+
 export async function deleteActivity(req, res) {
   const activity = await getRepository(Activity).findOne({id: req.params.activityId});
 

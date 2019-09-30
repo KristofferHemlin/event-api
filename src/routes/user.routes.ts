@@ -191,13 +191,13 @@ function setUpUserRoutes(app){
    app.get('/users/:userId/currentevent', (req, res) => userController.getCurrentEvent(req, res))
    
    /**
-  * @api {put} /account/firstlogin First update when user log in for the first time
+  * @api {put} /users/:userId/firstlogin First update when user log in for the first time
   *
   * @apiDescription This route updates user informtaion and changes password when the user
   * logs in for the first time. Verification with token. 
   *
   * @apiName FirstLogin
-  * @apiGroup Authentication
+  * @apiGroup User
   *
   * @apiParam {String} password The new password
   * @apiParam {String} firstName User first name
