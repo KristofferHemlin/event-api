@@ -59,6 +59,7 @@ export class setUpInitialEntities1569509225340 implements MigrationInterface {
             let formattedUser = {
                 firstName: user.firstName,
                 lastName: user.lastName,
+                profileImageUrl: null,
                 email: user.email,
                 phone: user.phone,
                 signupComplete: false,
