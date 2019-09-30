@@ -28,6 +28,9 @@ class User {
   @UpdateDateColumn({type: "timestamp"})
   updatedAt: Date;
 
+  @Column()
+  profileImageUrl: string;  
+
   @Column({
     length: 100,
   })

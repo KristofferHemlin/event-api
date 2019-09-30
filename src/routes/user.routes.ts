@@ -5,9 +5,9 @@ import isAuthenticated from '../middleware/isAuthenticated';
 function setUpUserRoutes(app){
 
   // Middleware
-   app.use('/users', (req, res, next) => {
-     isAuthenticated(req, res, next);
-   })
+  //  app.use('/users', (req, res, next) => {
+  //    isAuthenticated(req, res, next);
+  //  })
 
 
 
@@ -165,24 +165,6 @@ function setUpUserRoutes(app){
     userController.deleteUser(req, res);
   });
 
-
-
-  /**
-  * @api {post} /users/invite-multiple Invite multiple users by Excell file
-  * @apiDescription To be developed!
-  * @apiName InviteMultipleUsers
-  * @apiPermission Company Manager
-  * @apiGroup User
-  *
-  * @apiParam {Number} companyId The unique id of the user.
-  * @apiParam {filestream-data} file The excell file.
-  */
-
-  // Invite multiple user by uploaded ".xlx" file.
-  app.post('/users/invite-multiple', (req: express.Request, res: express.Response) => {
-    userController.inviteMultipleUsers(req, res);
-  });
-
   
   /**
   * @api {get} /event/activities/ Get all activities during the event for user 
@@ -225,6 +207,7 @@ function setUpUserRoutes(app){
   */
 
   app.put('/users/:userId/firstlogin', (req, res) => {userController.firstUpdate(req, res)});
+  
 }
 
 export default setUpUserRoutes;

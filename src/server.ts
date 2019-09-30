@@ -1,5 +1,7 @@
 import * as express from 'express';
 import * as bodyParser from 'body-parser';
+import * as csp from 'helmet-csp';
+
 import { createConnection } from 'typeorm';
 
 import * as multer from 'multer';
@@ -15,9 +17,17 @@ import "reflect-metadata";
 // Sets up express application!
 const app = express();
 
+
+
 // Sets up express dependencies.
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
+
+app.use(csp({
+  directives: {
+    imgSrc: [`'self'`]
+  }
+}))
 
 // test middleware -- remove later
 app.use(function(req, res, next) {
@@ -26,6 +36,8 @@ app.use(function(req, res, next) {
   next();
 });
 
+// sets up an accessable public folder. 
+app.use(express.static('public'));
 
 // Sets up typeorm connection.
 createConnection().then(connection => {

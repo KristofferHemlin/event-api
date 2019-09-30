@@ -159,15 +159,24 @@ export async function firstUpdate(req, res){
       if (!newPwd) {
         return res.status(400).send({message: "Need to specify a new password"});
       }
-      user.firstName = req.body.firstName? req.body.firstName : user.firstName;
-      user.lastName = req.body.lastName? req.body.lastName : user.lastName;
-      user.email = req.body.email? req.body.email : user.email;
-      user.phone = req.body.phone? req.body.phone : user.phone;
-      user.signupComplete = true;
-      user.password = bCrypt.hashSync(req.body.password, parseInt(process.env.SALT_ROUNDS, 10));
-      getRepository(User).save(user).then(response => {
-        response.password = undefined;
-        res.status(200).send(response);
+
+      upload(req, res, (err) => {
+        if (err instanceof multer.MulterError) {
+          res.status(400).send(err)
+        } else if (err) {
+          res.status(400).send(err)
+        } 
+        user.profileImageUrl = res.file.filename;
+        user.firstName = req.body.firstName ? req.body.firstName : user.firstName;
+        user.lastName = req.body.lastName ? req.body.lastName : user.lastName;
+        user.email = req.body.email ? req.body.email : user.email;
+        user.phone = req.body.phone ? req.body.phone : user.phone;
+        user.signupComplete = true;
+        user.password = bCrypt.hashSync(req.body.password, parseInt(process.env.SALT_ROUNDS, 10));
+        getRepository(User).save(user).then(response => {
+          response.password = undefined;
+          res.status(200).send(response);
+        });
       });
     })
   }
