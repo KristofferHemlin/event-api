@@ -13,7 +13,7 @@ export default (req, res, next) => {
   if(token){
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
       if(err){
-        return res.send(err)
+        return res.status(403).send(err)
       } else {
         req.decoded = decoded
         next();

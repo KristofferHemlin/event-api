@@ -87,36 +87,31 @@ export async function signUpNewUser(req, res) {
 }
 
 export async function changeUserPassword(req, res) {
-
-  let user = await createQueryBuilder(User)
-  .addSelect("User.password")
-  .where("User.id=:userId", {userId: req.decoded.user_id})
-  .getOne();
-
-  if (user) {
-    // Verify current password
-    let currentPwd = req.body.currentPassword;
-    bCrypt.compare(currentPwd, user.password)
+  createQueryBuilder(User)
+    .addSelect("User.password")
+    .where("User.id=:userId", {userId: req.decoded.user_id})
+    .getOne()
+    .then(user => {
+      if (!user) {
+        return res.status(400).send({message: "The user account does not exist"});
+      }
+      let currentPwd = req.body.currentPassword;
+      bCrypt.compare(currentPwd, user.password)
       .then( isMatch => {
-        if (isMatch) {
-          // Verify the new password is different from current
-          let newPwd = req.body.newPassword;
-          if (newPwd && (newPwd !== currentPwd)) {
-            // The new password is added to the account
-            user.password = bCrypt.hashSync(newPwd, parseInt(process.env.SALT_ROUNDS, 10));
-            getRepository(User).save(user)
-            .then(_ => res.status(200).send({message: "Password changed"}))
-            .catch(_ => res.status(500).send({message: "The password could not be changed"}));
-          } else {
-            res.status(400).send({message: "The new password is not valid"})
-            }
-        } else {
-          res.status(400).send({message: "The current password is wrong"})
-          }
-      }, _ => res.status(400).send({message: "Cannot change password without current password"}));
-  } else {
-    res.status(400).send({message: "The user account does not exist"})
-  }
+        if (!isMatch) {
+          return res.status(400).send({message: "The current password is wrong"});
+        }
+        const newPwd = req.body.newPassword;
+        if (!newPwd || newPwd === currentPwd) {
+          return res.status(400).send({message: "The new password is not valid"});
+        }
+
+        user.password = bCrypt.hashSync(newPwd, parseInt(process.env.SALT_ROUNDS, 10));
+        getRepository(User).save(user)
+        .then(_ => res.status(200).send({message: "Password changed"}))
+        .catch(_ => res.status(500).send({message: "The password could not be changed"}));
+      }, _ => res.status(400).send({message: "Cannot change password without current password"}))
+    });
 }
 
 export async function firstUpdate(req, res){
@@ -126,21 +121,23 @@ export async function firstUpdate(req, res){
   const userId = req.decoded.user_id;
   getRepository(User).findOne({id: userId})
     .then(user => {
-      if (!user.signupComplete) {
-        const newPwd = req.body.password;
-        if (newPwd){
-          user.firstName = req.body.firstName? req.body.firstName : user.firstName;
-          user.lastName = req.body.lastName? req.body.lastName : user.lastName;
-          user.email = req.body.email? req.body.email : user.email;
-          user.phone = req.body.phone? req.body.phone : user.phone;
-          user.signupComplete = true;
-          user.password = bCrypt.hashSync(req.body.password, parseInt(process.env.SALT_ROUNDS, 10));
-          getRepository(User).save(user).then(response => res.status(204).send());
-        } else {
-          res.status(400).send({message: "Need to specify a new password"})
-        }
-      } else {
-        res.status(403).send({message: "The user has already signed up"})
+      if (user.signupComplete) {
+         return res.status(403).send({message: "The user has already signed up"});
       }
+      const newPwd = req.body.password;
+      
+      if (!newPwd) {
+        return res.status(400).send({message: "Need to specify a new password"});
+      }
+      user.firstName = req.body.firstName? req.body.firstName : user.firstName;
+      user.lastName = req.body.lastName? req.body.lastName : user.lastName;
+      user.email = req.body.email? req.body.email : user.email;
+      user.phone = req.body.phone? req.body.phone : user.phone;
+      user.signupComplete = true;
+      user.password = bCrypt.hashSync(req.body.password, parseInt(process.env.SALT_ROUNDS, 10));
+      getRepository(User).save(user).then(response => {
+        response.password = undefined;
+        res.status(200).send(response);
+      });
     })
 }
