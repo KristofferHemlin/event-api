@@ -159,5 +159,5 @@ export async function getCurrentEvent(req, res){
     response => res.status(200).send(response[0]), 
     error => {
       console.log(error)
-      res.status(400).send({message: "Could fetch events"})});
+      res.status(400).send({message: "Could not fetch events"})});
 }
