@@ -114,30 +114,3 @@ export async function changeUserPassword(req, res) {
     });
 }
 
-export async function firstUpdate(req, res){
-  // find user
-  // check that the user isn't acitve
-  // update the user info
-  const userId = req.decoded.user_id;
-  getRepository(User).findOne({id: userId})
-    .then(user => {
-      if (user.signupComplete) {
-         return res.status(403).send({message: "The user has already signed up"});
-      }
-      const newPwd = req.body.password;
-      
-      if (!newPwd) {
-        return res.status(400).send({message: "Need to specify a new password"});
-      }
-      user.firstName = req.body.firstName? req.body.firstName : user.firstName;
-      user.lastName = req.body.lastName? req.body.lastName : user.lastName;
-      user.email = req.body.email? req.body.email : user.email;
-      user.phone = req.body.phone? req.body.phone : user.phone;
-      user.signupComplete = true;
-      user.password = bCrypt.hashSync(req.body.password, parseInt(process.env.SALT_ROUNDS, 10));
-      getRepository(User).save(user).then(response => {
-        response.password = undefined;
-        res.status(200).send(response);
-      });
-    })
-}

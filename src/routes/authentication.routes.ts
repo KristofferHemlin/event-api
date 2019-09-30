@@ -67,27 +67,6 @@ function setUpAuthenticationRoutes(app){
     (req, res) => {
       authenticationController.changeUserPassword(req, res);
     });
-
-/**
-  * @api {put} /account/firstlogin First update when user log in for the first time
-  *
-  * @apiDescription This route updates user informtaion and changes password when the user
-  * logs in for the first time. Verification with token. 
-  *
-  * @apiName FirstLogin
-  * @apiGroup Authentication
-  *
-  * @apiParam {String} newPassword The new password
-  * @apiParam {String} firstName User first name
-  * @apiParam {String} lastName User last name
-  * @apiParam {String} email User email
-  * @apiParam {String} phone User phone number
-  */
-
-  // This must only be able to change if the user has not logged in!!!
-
-  app.put('/account/firstlogin', isAuthenticated, 
-    (req, res) => {authenticationController.firstUpdate(req, res)});
 }
 
 export default setUpAuthenticationRoutes;
