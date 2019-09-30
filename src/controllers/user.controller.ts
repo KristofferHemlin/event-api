@@ -119,22 +119,6 @@ export async function addCompanyToUser(req, res){
   })
 }
 
-export async function inviteMultipleUsers(req, res){
-  upload(req, res, function (err) {
-    if (err instanceof multer.MulterError) {
-      res.send(err)
-    } else if (err) {
-      res.send(err)
-    }
-
-    const result = excelToJson({
-      sourceFile: req.file.path
-    });
-
-    res.status(200).send(result)
-  })
-}
-
 export async function getUserEventActivities(req: Request , res: Response) {
   getConnection()
     .createQueryBuilder("Activity", "activity")
