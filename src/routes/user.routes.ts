@@ -217,15 +217,14 @@ function setUpUserRoutes(app){
   * @apiName FirstLogin
   * @apiGroup Authentication
   *
-  * @apiParam {String} newPassword The new password
+  * @apiParam {String} password The new password
   * @apiParam {String} firstName User first name
   * @apiParam {String} lastName User last name
   * @apiParam {String} email User email
   * @apiParam {String} phone User phone number
   */
 
-  app.put('/users/:userId/firstlogin', isAuthenticated, 
-  (req, res) => {userController.firstUpdate(req, res)});
+  app.put('/users/:userId/firstlogin', (req, res) => {userController.firstUpdate(req, res)});
 }
 
 export default setUpUserRoutes;
