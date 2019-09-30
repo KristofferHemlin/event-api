@@ -153,10 +153,10 @@ export async function getUserEventActivities(req: Request , res: Response) {
 export async function getCurrentEvent(req, res){
   createQueryBuilder(Event)
   .innerJoin("Event.participants", "ep")
-  .where("ep.id=:userId and Event.id=:eventId", {userId: req.params.userId, eventId: 1})
-  .getOne()
+  .where("ep.id=:userId", {userId: req.params.userId})
+  .getMany()
   .then(
-    response => res.status(200).send(response), 
+    response => res.status(200).send(response[0]), 
     error => {
       console.log(error)
       res.status(400).send({message: "Could fetch events"})});
