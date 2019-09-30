@@ -42,6 +42,9 @@ function setUpActivityRoutes(app) {
   * @apiParam {Number} eventId The unique identifier of the parent event.
   * @apiParam {String} title The title of the activity.
   * @apiParam {String} description The description of the activity.
+  * @apiParam {String} startTime (YYYY-MM-DD HH:MM) Date and time when the activity starts.
+  * @apiParam {String} endTime (YYYY-MM-DD HH:MM) Date and time when the activity ends.
+  * @apiParam {String} location Activity location.
   */
 
   app.post('/activities', (req: express.Request, res: express.Response) => {

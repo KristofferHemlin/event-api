@@ -31,6 +31,18 @@ class Activity {
   @Column()
   description: string;
 
+  @Column({type: "timestamp"})
+  startTime: Date;
+
+  @Column({type: "timestamp"})
+  endTime: Date;
+
+  @Column()
+  location: string;
+
+  @Column({nullable: true})
+  coverImageUrl: string;
+
   @ManyToOne(type => Event, event => event.activities)
   event: Event;
 

@@ -17,6 +17,9 @@ export async function createActivity(req, res) {
   activity.description = req.body.description;
   activity.event = event;
   activity.company = event.company;
+  activity.startTime = req.body.startTime;
+  activity.endTime = req.body.endTime;
+  activity.location = req.body.location;
 
   getRepository(Activity).save(activity)
   .then(response => {
