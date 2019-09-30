@@ -164,10 +164,7 @@ export async function getCurrentEvent(req, res){
 }
 
 export async function firstUpdate(req, res){
-  // find user
-  // check that the user isn't acitve
-  // update the user info
-  const userId = req.decoded.user_id;
+  const userId = req.params.userId;
   getRepository(User).findOne({id: userId})
     .then(user => {
       if (user.signupComplete) {
