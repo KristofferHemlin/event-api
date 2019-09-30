@@ -184,7 +184,7 @@ function setUpUserRoutes(app){
   });
 
   
-    /**
+  /**
   * @api {get} /event/activities/ Get all activities during the event for user 
   * @apiName GetUserEventActivities
   * @apiGroup User
@@ -197,6 +197,16 @@ function setUpUserRoutes(app){
   app.get('/users/:userId/events/:eventId/activities', (req: express.Request, res: express.Response) => {
     userController.getUserEventActivities(req, res);
   });
+  
+  /**
+   * @api {get} /users/:userId/currentevent Get the current activity for user
+   * @apiName GetCurrentEvent
+   * @apiGroup User
+   * 
+   * @apiParam {Number} userId The unique identifier for the user. 
+   */
+  
+   app.get('/users/:userId/currentevent', (req, res) => userController.getCurrentEvent(req, res))
 }
 
 export default setUpUserRoutes;

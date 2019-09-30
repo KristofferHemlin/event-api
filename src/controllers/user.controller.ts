@@ -1,6 +1,7 @@
 import User from '../entities/user.entity';
 import Company from '../entities/company.entity';
-import {getRepository, getConnection} from "typeorm";
+import Event from '../entities/event.entity';
+import {getRepository, getConnection, createQueryBuilder} from "typeorm";
 import {Request, Response} from 'express';
 
 import * as excelToJson from 'convert-excel-to-json';
@@ -147,4 +148,16 @@ export async function getUserEventActivities(req: Request , res: Response) {
         res.status(500).send();
         console.log("An error occurred when processing the query: "+error);
       });
+  }
+
+export async function getCurrentEvent(req, res){
+  createQueryBuilder(Event)
+  .innerJoin("Event.participants", "ep")
+  .where("ep.id=:userId and Event.id=:eventId", {userId: req.params.userId, eventId: 1})
+  .getOne()
+  .then(
+    response => res.status(200).send(response), 
+    error => {
+      console.log(error)
+      res.status(400).send({message: "Could fetch events"})});
 }
