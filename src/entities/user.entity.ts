@@ -28,7 +28,7 @@ class User {
   @UpdateDateColumn({type: "timestamp"})
   updatedAt: Date;
 
-  @Column()
+  @Column({ nullable: true })
   profileImageUrl: string;  
 
   @Column({
