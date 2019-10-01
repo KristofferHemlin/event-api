@@ -4,23 +4,40 @@ import Company from '../entities/company.entity';
 import Event from '../entities/event.entity';
 import {getRepository, getConnection, createQueryBuilder} from "typeorm";
 import {Request, Response} from 'express';
+import * as fs from 'fs';
 
 import * as excelToJson from 'convert-excel-to-json';
 
 import * as multer from 'multer';
 
 // Multer file upload handling.
-var storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-      cb(null, 'public')
-    },
-    filename: function (req, file, cb) {
-      cb(null, Date.now() + '-' +file.originalname )
-    }
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'public')
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' +file.originalname )
+  }
 })
+
+const accepted_extensions = ['jpg', 'png', '.heic'];
 
 var upload = multer({
   storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+    file: 1,
+  },
+  fileFilter: (req, file, cb) => {
+    console.log('checking the file');
+    // if the file extension is in our accepted list
+    if (accepted_extensions.some(ext => file.originalname.endsWith("." + ext))) {
+      return cb(null, true);
+    }
+
+    // otherwise, return error
+    return cb({message: 'Only ' + accepted_extensions.join(", ") + ' files are allowed!'})
+  }  
 }).single('image')
 
 
@@ -147,26 +164,41 @@ export async function getCurrentEvent(req, res){
       res.status(400).send({message: "Could not fetch events"})});
 }
 
+// Helper function for removing an image. 
+const removeFile = (path) => {
+  if(path){
+    fs.unlinkSync('./' + path);
+  }
+}; 
+
 export async function firstUpdate(req, res){
   const userId = req.params.userId;
-  getRepository(User).findOne({id: userId})
-    .then(user => {
-      if (user.signupComplete) {
-         return res.status(403).send({message: "The user has already signed up"});
-      }
-      const newPwd = req.body.password;
-      
-      if (!newPwd) {
-        return res.status(400).send({message: "Need to specify a new password"});
-      }
 
-      upload(req, res, (err) => {
-        if (err instanceof multer.MulterError) {
-          res.status(400).send(err)
-        } else if (err) {
-          res.status(400).send(err)
-        } 
-        user.profileImageUrl = res.file.filename;
+  // Starts the upload of the user profile image.
+  upload(req, res, (err) => {
+
+    // Check for any faults with the image upload.
+    if(err){
+      return res.status(500).send(err);
+    }
+
+    if(!req.file){
+      return res.status(400).send({ message: 'Missing profile image.'});
+    }
+
+    getRepository(User).findOne({ id: userId })
+      .then(user => {
+        if (user.signupComplete) {
+          removeFile(req.file.path)
+          return res.status(403).send({ message: "The user has already signed up" });
+        }
+        const newPwd = req.body.password;
+
+        if (!newPwd) {
+          removeFile(req.file.path)
+          return res.status(400).send({ message: "Need to specify a new password" });
+        }
+        user.profileImageUrl = req.file.filename;
         user.firstName = req.body.firstName ? req.body.firstName : user.firstName;
         user.lastName = req.body.lastName ? req.body.lastName : user.lastName;
         user.email = req.body.email ? req.body.email : user.email;
@@ -177,6 +209,16 @@ export async function firstUpdate(req, res){
           response.password = undefined;
           res.status(200).send(response);
         });
-      });
+      })
+      .catch(error => {
+        removeFile(req.file.path)
+        if (error.response){
+          return res.status(error.response.status).send(error.response.data);
+        } else if (error.request) {
+          return res.send(error.request);
+        } else {
+          return res.send(error.message);
+        }
+      })
     })
-  }
+  };
