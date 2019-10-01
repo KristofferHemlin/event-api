@@ -28,6 +28,9 @@ export class setUpInitialEntities1569509225340 implements MigrationInterface {
         theActivity.title = 'Hiking i Bergen av Split',
         theActivity.description = 'Maecenas sodales, diam ac scelerisque sollicitudin, urna augue tempor nisi, at feugiat dolor turpis sed ex. Nam pharetra sem dolor.'
         theActivity.company = createdCompany;
+        theActivity.startTime = new Date("2019-10-19 11:00");
+        theActivity.endTime = new Date("2019-10-19 15:00");
+        theActivity.location = "Bergen, Split"
         await getRepository(Activity).save(theActivity);
 
         // Get the newly created activity from the DB.
@@ -38,6 +41,9 @@ export class setUpInitialEntities1569509225340 implements MigrationInterface {
         theEvent.title = 'Claremont i Kroatien';
         theEvent.description = 'Sed magna enim, fringilla eget quam vitae, condimentum euismod turpis. Phasellus dignissim purus sit amet felis finibus, eget tristique urna feugiat.' 
         theEvent.company = createdCompany;
+        theEvent.startTime = new Date("2019-10-17 16:00");
+        theEvent.endTime = new Date("2019-10-20 18:00");
+        theEvent.location = "Sibenik, Kroatien"
         theEvent.activities = [];
         theEvent.activities.push(createdActivity);
         await getRepository(Event).save(theEvent);

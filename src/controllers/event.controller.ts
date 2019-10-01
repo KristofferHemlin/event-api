@@ -17,6 +17,9 @@ export async function createEvent(req, res) {
   event.title = req.body.title;
   event.description = req.body.description;
   event.company = company;
+  event.startTime = req.body.startTime;
+  event.endTime = req.body.endTime;
+  event.location = req.body.location;
 
   getRepository(Event).save(event)
   .then(response => {
@@ -32,13 +35,16 @@ export async function createEvent(req, res) {
 export async function updateEvent(req, res){
   const event = await getRepository(Event).findOne({id: req.body.eventId });
 
-  event.title = req.body.title;
-  event.description = req.body.description;
+  event.title = req.body.title? req.body.title: event.title;
+  event.description = req.body.description? req.body.description: event.description;
+  event.startTime = req.body.startTime? req.body.startTime: event.startTime;
+  event.endTime = req.body.endTime? req.body.endTime: event.endTime;
+  event.location = req.body.location? req.body.location: event.location;
 
   getRepository(Event).save(event)
   .then(response => {
     res.send({
-      message: `Successfully updated project ${event.id}.`,
+      message: `Successfully updated event ${event.id}.`,
     })
   })
   .catch(error => {

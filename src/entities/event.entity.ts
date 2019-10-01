@@ -32,6 +32,18 @@ class Event {
   @Column()
   description: string;
 
+  @Column({type: "timestamp"})
+  startTime: Date;
+
+  @Column({type: "timestamp"})
+  endTime: Date;
+
+  @Column()
+  location: string;
+
+  @Column({nullable: true})
+  coverImageUrl: string;
+
   @ManyToOne(type => Company, company => company.events)
   company: Company;
 

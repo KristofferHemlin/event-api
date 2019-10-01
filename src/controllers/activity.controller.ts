@@ -17,6 +17,9 @@ export async function createActivity(req, res) {
   activity.description = req.body.description;
   activity.event = event;
   activity.company = event.company;
+  activity.startTime = req.body.startTime;
+  activity.endTime = req.body.endTime;
+  activity.location = req.body.location;
 
   getRepository(Activity).save(activity)
   .then(response => {
@@ -40,6 +43,11 @@ export async function getAllActivities(req, res) {
   .catch(error => {
     return res.send(error);
   })
+}
+
+export async function getActivity(req, res) {
+  getRepository(Activity).findOne({id: req.params.activityId})
+    .then(activity => res.status(200).send(activity), error => res.status(500).send({message: "The activity could not be fetched."}));
 }
 
 export async function deleteActivity(req, res) {

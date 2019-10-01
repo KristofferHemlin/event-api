@@ -19,6 +19,9 @@ function setUpEventRoutes(app) {
   * @apiParam {Number} companyId Unique identifier for the parent company.
   * @apiParam {String} title The title of the event.
   * @apiParam {String} description The description of the event.
+  * @apiParam {String} startTime (YYYY-MM-DD HH:MM) Date and time when the event starts.
+  * @apiParam {String} endTime (YYYY-MM-DD HH:MM) Date and time when the event ends.
+  * @apiParam {String} location Event location.
   */
 
   // Create a new event.
@@ -37,6 +40,9 @@ function setUpEventRoutes(app) {
   * @apiParam {Number} eventId Unique identifier for the event.
   * @apiParam {String} title The title of the event.
   * @apiParam {String} description The description of the event.
+  * @apiParam {String} startTime (YYYY-MM-DD HH:MM) Date and time when the event starts.
+  * @apiParam {String} endTime (YYYY-MM-DD HH:MM) Date and time when the event ends.
+  * @apiParam {String} location Event location.
   */
 
   // Update an event.
