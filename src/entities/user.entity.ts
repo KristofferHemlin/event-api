@@ -50,6 +50,15 @@ class User {
   @Column()
   signupComplete: boolean;
 
+  @Column({ nullable: true })
+  companyDepartment: string;
+
+  @Column({ nullable: true })
+  aboutMe: string;
+
+  @Column({ nullable: true })
+  allergiesOrPreferences: string;
+
   @Column()
   isActive: boolean;
 
