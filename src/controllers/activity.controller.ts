@@ -20,7 +20,7 @@ export async function createActivity(req, res) {
   activity.startTime = req.body.startTime;
   activity.endTime = req.body.endTime;
   activity.location = req.body.location;
-  activity.niceToKnow = req.body.niceToKnow || null;
+  activity.niceToKnow = req.body.niceToKnow;
 
   getRepository(Activity).save(activity)
   .then(response => {
@@ -122,7 +122,7 @@ export async function updateActivity(req, res) {
       activity.startTime = req.body.startTime? req.body.startTime : activity.startTime;
       activity.endTime = req.body.endTime? req.body.endTime : activity.endTime;
       activity.location = req.body.location? req.body.location : activity.location;
-      activity.niceToKnow = req.body.niceToKnow? req.body.niceToKnow : activity.niceToKnow;
+      activity.niceToKnow = req.body.niceToKnow;
       getRepository(Activity).save(activity).then(
         response => res.status(200).send(response),
         error => res.status(500).send("Could not update activity"));
