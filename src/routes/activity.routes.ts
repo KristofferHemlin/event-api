@@ -31,6 +31,18 @@ function setUpActivityRoutes(app) {
   activityController.getActivity(req, res);
 })
 
+/**
+ * @api {get} /activities/:activityId/users Fetch all users on a specific activity.
+ * @apiName GetActivityParticipants
+ * @apiGroup Activity
+ * 
+ * @apiParam {number} activityId The unique identifier of the activity
+ */
+
+ app.get('/activities/:activityId/users', (req: express.Request, res: express.Response) => {
+   activityController.getActivityUsers(req, res);
+ })
+
 
 
   /**

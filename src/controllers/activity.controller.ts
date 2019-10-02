@@ -1,4 +1,4 @@
-import { getRepository } from 'typeorm';
+import { getRepository, createQueryBuilder } from 'typeorm';
 import Activity from '../entities/activity.entity';
 import Event from '../entities/event.entity';
 import User from '../entities/user.entity';
@@ -49,6 +49,19 @@ export async function getAllActivities(req, res) {
 export async function getActivity(req, res) {
   getRepository(Activity).findOne({id: req.params.activityId})
     .then(activity => res.status(200).send(activity), error => res.status(500).send({message: "The activity could not be fetched."}));
+}
+
+export async function getActivityUsers(req, res) {
+  createQueryBuilder(User)
+  .innerJoin("User.activities", "ua")
+  .where("ua.id=:activityId", {activityId: req.params.activityId})
+  .getMany()
+  .then(
+    participants => res.status(200).send(participants), 
+    error => {
+      console.log(error)
+      res.status(500).send("Could not fetch activity participants")})
+  .catch(error => res.status(500).send("Error while fetching participants"))
 }
 
 export async function deleteActivity(req, res) {
