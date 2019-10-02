@@ -73,6 +73,22 @@ export async function getEventParticipants(req, res) {
     .then(response => res.status(200).send(response), error => {console.log(error); res.status(500).send({message: "Could not fetch event participants"})})
 }
 
+export async function getEventActivities(req, res) {
+  createQueryBuilder(Activity)
+  .where("Activity.event =:eventId", {eventId: req.params.eventId})
+  .getMany()
+  .then(
+    activities => res.status(200).send(activities),
+    error => {
+      console.log(error);
+      res.status(500).send({message: "Could not fetch event activities"})}
+  )
+  .catch(error => {
+    console.log(error);
+    res.status(500).send({message: "Error while fetching event activities"})
+  })
+}
+
 
 // FIXME: Implement check to see if user is part of company.
 export async function addUserToEvent(req, res){

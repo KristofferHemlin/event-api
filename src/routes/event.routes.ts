@@ -80,6 +80,17 @@ function setUpEventRoutes(app) {
 
 
   /**
+   * @api {get} /events/:eventId/activities
+   * @apiDescription This route fetches all activities for the specified event.
+   * @apiName GetEventActivities
+   * @apiGroup Event
+   * 
+   * @apiParam {Number} eventId Unique identifier for the event.
+   */
+
+   app.get("/events/:eventId/activities", eventController.getEventActivities);
+
+  /**
   * @api {post} /event/add-user Add a user to an event
   * @apiDescription Adds
   * @apiPermission Authenticated User - Admin, Company Manager (or user set to organizer of the event.)
