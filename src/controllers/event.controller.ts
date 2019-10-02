@@ -33,7 +33,7 @@ export async function createEvent(req, res) {
 }
 
 export async function updateEvent(req, res){
-  const event = await getRepository(Event).findOne({id: req.body.eventId });
+  const event = await getRepository(Event).findOne({id: req.params.eventId });
 
   event.title = req.body.title? req.body.title: event.title;
   event.description = req.body.description? req.body.description: event.description;

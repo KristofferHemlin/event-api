@@ -38,6 +38,7 @@ function setUpEventRoutes(app) {
   * @apiGroup Event
   *
   * @apiParam {Number} eventId Unique identifier for the event.
+  * 
   * @apiParam {String} title The title of the event.
   * @apiParam {String} description The description of the event.
   * @apiParam {String} startTime (YYYY-MM-DD HH:MM) Date and time when the event starts.
@@ -46,7 +47,7 @@ function setUpEventRoutes(app) {
   */
 
   // Update an event.
-  app.put('/events', (req: express.Request, res: express.Response) => {
+  app.put('/events/:eventId', (req: express.Request, res: express.Response) => {
     eventController.updateEvent(req, res);
   })
 
