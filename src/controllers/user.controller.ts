@@ -205,11 +205,7 @@ export async function firstUpdate(req, res){
         user.lastName = req.body.lastName ? req.body.lastName : user.lastName;
         user.email = req.body.email ? req.body.email : user.email;
         user.phone = req.body.phone ? req.body.phone : user.phone;
-<<<<<<< HEAD
         user.companyDepartment = req.body.companyDepartment ? req.body.companyDepartment : user.companyDepartment;
-=======
-        user.companyDepartment = req.body.companyDepartment;
->>>>>>> 0ec92a262a77e585c5a0dfcb303c58d6b1baa9ef
         user.signupComplete = true;
         user.password = bCrypt.hashSync(req.body.password, parseInt(process.env.SALT_ROUNDS, 10));
         getRepository(User).save(user).then(response => {
