@@ -32,6 +32,7 @@ app.use(csp({
 // test middleware -- remove later
 app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Origin", '*'); // update to match the domain you will make the request from
+  res.header('Access-Control-Allow-Methods', "POST, GET, OPTIONS, PUT, DELETE");
   res.header("Access-Control-Allow-Headers", "Origin, OPTIONS, X-Requested-With, Content-Type, Accept, Authorization");
   next();
 });

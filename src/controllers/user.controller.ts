@@ -20,7 +20,7 @@ const storage = multer.diskStorage({
   }
 })
 
-const accepted_extensions = ['jpg', 'png', '.heic'];
+const accepted_extensions = ['jpg', 'jpeg', 'png', '.heic'];
 
 var upload = multer({
   storage: storage,
@@ -70,13 +70,12 @@ export async function getAllUsers(req, res) {
 }
 
 export async function getUserInfoForCurrentUser(req, res) {
-  console.log('decoded:', req.decoded);
   await getRepository(User).findOne({ id: req.decoded.user_id }, {relations: ['company', 'activities', 'events']})
   .then(user => {
-    res.send(user);
+    return res.send(user);
   })
   .catch(error => {
-    res.send(error);
+    return res.send(error);
   })
 }
 
@@ -203,6 +202,7 @@ export async function firstUpdate(req, res){
         user.lastName = req.body.lastName ? req.body.lastName : user.lastName;
         user.email = req.body.email ? req.body.email : user.email;
         user.phone = req.body.phone ? req.body.phone : user.phone;
+        user.companyDepartment = req.body.companyDepartment ? req.body.companyDepartment : user.companyDepartment;
         user.signupComplete = true;
         user.password = bCrypt.hashSync(req.body.password, parseInt(process.env.SALT_ROUNDS, 10));
         getRepository(User).save(user).then(response => {
