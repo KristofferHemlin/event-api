@@ -141,6 +141,14 @@ function setUpUserRoutes(app){
   * @apiGroup User
   *
   * @apiParam {Number} userId The unique id of the user.
+  * 
+  * @apiParam {String} firstName User first name
+  * @apiParam {String} lastName User last name
+  * @apiParam {String} email User email
+  * @apiParam {String} phone User phone number
+  * @apiParam {String} companyDepartment Department within the company user belongs to
+  * @apiParam {String} aboutMe Description of user
+  * @apiParam {String} allergiesOrPreferences User allergies or food preferences
   */
 
   // Update a user with userId
@@ -192,18 +200,19 @@ function setUpUserRoutes(app){
    
    /**
   * @api {put} /users/:userId/firstlogin First update when user log in for the first time
-  *
   * @apiDescription This route updates user informtaion and changes password when the user
   * logs in for the first time. Verification with token. 
-  *
   * @apiName FirstLogin
   * @apiGroup User
-  *
+  * 
+  * @apiParam {number} userId The unique identifier for the user
+  * 
   * @apiParam {String} password The new password
   * @apiParam {String} firstName User first name
   * @apiParam {String} lastName User last name
   * @apiParam {String} email User email
   * @apiParam {String} phone User phone number
+  * @apiParam {String} companyDepartment Department which the user belongs to
   */
 
   app.put('/users/:userId/firstlogin', (req, res) => {userController.firstUpdate(req, res)});

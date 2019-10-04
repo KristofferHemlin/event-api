@@ -31,6 +31,18 @@ function setUpActivityRoutes(app) {
   activityController.getActivity(req, res);
 })
 
+/**
+ * @api {get} /activities/:activityId/users Fetch all users on a specific activity.
+ * @apiName GetActivityParticipants
+ * @apiGroup Activity
+ * 
+ * @apiParam {number} activityId The unique identifier of the activity
+ */
+
+ app.get('/activities/:activityId/users', (req: express.Request, res: express.Response) => {
+   activityController.getActivityUsers(req, res);
+ })
+
 
 
   /**
@@ -45,6 +57,7 @@ function setUpActivityRoutes(app) {
   * @apiParam {String} startTime (YYYY-MM-DD HH:MM) Date and time when the activity starts.
   * @apiParam {String} endTime (YYYY-MM-DD HH:MM) Date and time when the activity ends.
   * @apiParam {String} location Activity location.
+  * @apiParam {String} niceToKnow Things that is good to know about the activity
   */
 
   app.post('/activities', (req: express.Request, res: express.Response) => {
@@ -84,13 +97,23 @@ function setUpActivityRoutes(app) {
 
   /**
   * @api {put} /activities/:activityId Update the activity information.
-  * @apiName UpdateActivityInformation
-  * @apiDescription This route is not available yet.
+  * @apiName UpdateActivityInfo
+  * @apiDescription Update the activity information
   * @apiPermission Admin & Company Manager (or user set to organizer of the parent event.)
   * @apiGroup Activity
   *
   * @apiParam {Number} activityId The unique identifier of the activity.
+  * @apiParam {String} title The title of the activity.
+  * @apiParam {String} description The description of the activity.
+  * @apiParam {String} startTime (YYYY-MM-DD HH:MM) Date and time when the activity starts.
+  * @apiParam {String} endTime (YYYY-MM-DD HH:MM) Date and time when the activity ends.
+  * @apiParam {String} location Activity location.
+  * @apiParam {String} niceToKnow Things that is good to know about the activity
   */
+
+  app.put('/activities/:activityId', (req: express.Request, res: express.Response) => {
+    activityController.updateActivity(req, res)
+  })
 
 
 }

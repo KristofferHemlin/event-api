@@ -1,4 +1,4 @@
-import { getRepository } from 'typeorm';
+import { getRepository, createQueryBuilder } from 'typeorm';
 import Activity from '../entities/activity.entity';
 import Event from '../entities/event.entity';
 import User from '../entities/user.entity';
@@ -20,6 +20,7 @@ export async function createActivity(req, res) {
   activity.startTime = req.body.startTime;
   activity.endTime = req.body.endTime;
   activity.location = req.body.location;
+  activity.niceToKnow = req.body.niceToKnow;
 
   getRepository(Activity).save(activity)
   .then(response => {
@@ -48,6 +49,19 @@ export async function getAllActivities(req, res) {
 export async function getActivity(req, res) {
   getRepository(Activity).findOne({id: req.params.activityId})
     .then(activity => res.status(200).send(activity), error => res.status(500).send({message: "The activity could not be fetched."}));
+}
+
+export async function getActivityUsers(req, res) {
+  createQueryBuilder(User)
+  .innerJoin("User.activities", "ua")
+  .where("ua.id=:activityId", {activityId: req.params.activityId})
+  .getMany()
+  .then(
+    participants => res.status(200).send(participants), 
+    error => {
+      console.log(error)
+      res.status(500).send("Could not fetch activity participants")})
+  .catch(error => res.status(500).send("Error while fetching participants"))
 }
 
 export async function deleteActivity(req, res) {
@@ -98,4 +112,23 @@ export async function addUserToActivity(req, res){
       message: 'The user is not a participant in the activity parent event!',
     })
   }
+}
+
+export async function updateActivity(req, res) {
+  getRepository(Activity).findOne({id: req.params.activityId}).then(activity  => {
+    if (activity) {
+      activity.title = req.body.title? req.body.title : activity.title;
+      activity.description = req.body.description? req.body.description : activity.description;
+      activity.startTime = req.body.startTime? req.body.startTime : activity.startTime;
+      activity.endTime = req.body.endTime? req.body.endTime : activity.endTime;
+      activity.location = req.body.location? req.body.location : activity.location;
+      activity.niceToKnow = req.body.niceToKnow;
+      getRepository(Activity).save(activity).then(
+        response => res.status(200).send(response),
+        error => res.status(500).send("Could not update activity"));
+    } else {
+      res.status(400).send("No activity found with provided id");
+    }
+  }, error => res.status(500).send({message: "Cannot fetch activity"}))
+  .catch(error => res.status(500).send({message: "Could not update activity"}))
 }

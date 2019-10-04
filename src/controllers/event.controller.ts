@@ -33,7 +33,7 @@ export async function createEvent(req, res) {
 }
 
 export async function updateEvent(req, res){
-  const event = await getRepository(Event).findOne({id: req.body.eventId });
+  const event = await getRepository(Event).findOne({id: req.params.eventId });
 
   event.title = req.body.title? req.body.title: event.title;
   event.description = req.body.description? req.body.description: event.description;
@@ -71,6 +71,22 @@ export async function getEventParticipants(req, res) {
     .innerJoin("User.events", "ue", "ue.id=:eventId", {eventId: req.params.eventId})
     .getMany()
     .then(response => res.status(200).send(response), error => {console.log(error); res.status(500).send({message: "Could not fetch event participants"})})
+}
+
+export async function getEventActivities(req, res) {
+  createQueryBuilder(Activity)
+  .where("Activity.event =:eventId", {eventId: req.params.eventId})
+  .getMany()
+  .then(
+    activities => res.status(200).send(activities),
+    error => {
+      console.log(error);
+      res.status(500).send({message: "Could not fetch event activities"})}
+  )
+  .catch(error => {
+    console.log(error);
+    res.status(500).send({message: "Error while fetching event activities"})
+  })
 }
 
 

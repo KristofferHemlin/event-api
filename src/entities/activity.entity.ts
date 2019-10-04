@@ -43,6 +43,9 @@ class Activity {
   @Column({nullable: true})
   coverImageUrl: string;
 
+  @Column({nullable: true})
+  niceToKnow: string;
+
   @ManyToOne(type => Event, event => event.activities)
   event: Event;
 
