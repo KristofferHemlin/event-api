@@ -1,6 +1,7 @@
 import Company from '../entities/company.entity';
 import User from '../entities/user.entity';
-import {getRepository} from "typeorm";
+import Event from '../entities/event.entity';
+import {getRepository, createQueryBuilder} from "typeorm";
 
 export async function createCompany(req, res) {
 
@@ -102,3 +103,16 @@ export async function deleteCompany(req, res){
     res.send(error);
   })
 }
+
+export async function getAllEventsForaCompany(req, res) {
+
+  // If the user is an admin use the companyId param, 
+  // else use the req.decoded.companyId param.
+
+  const events = await getRepository(Event)
+    .createQueryBuilder()
+    .leftJoinAndSelect("Event.company", "company")
+    .where("Event.company.id = :companyId", { companyId: req.params.companyId })
+    .getMany()
+  res.status(200).send(events)
+} 

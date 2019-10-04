@@ -5,9 +5,9 @@ import isAuthenticated from '../middleware/isAuthenticated';
 function setUpCompanyRoutes(app){
 
   // Middleware
-  app.use('/companies', (req, res, next) => {
-    isAuthenticated(req, res, next);
-  })
+  // app.use('/companies', (req, res, next) => {
+  //   isAuthenticated(req, res, next);
+  // })
 
 
 
@@ -107,6 +107,23 @@ function setUpCompanyRoutes(app){
   app.delete('/companies/:companyId', (req: express.Request, res: express.Response) => {
     companyController.deleteCompany(req, res);
   });
+
+
+  /**
+  * @api {get} /companies/:companyId/events Get all events for a company
+  * @apiPermission Authenticated User - Admin, Company Manager, Company Member
+  * @apiName GetCompanyEvents
+  * @apiGroup Company
+  *
+  * @apiParam {Number} companyId The unique identifier of the company.
+  */
+
+
+  // Get all events for a company.
+  app.get('/companies/:companyId/events', (req: express.Request, res: express.Response) => {
+    companyController.getAllEventsForaCompany(req, res);
+  })
+
 
 }
 
