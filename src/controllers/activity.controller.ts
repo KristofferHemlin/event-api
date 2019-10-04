@@ -37,7 +37,7 @@ export async function createActivity(req, res) {
 }
 
 export async function getAllActivities(req, res) {
-  getRepository(Activity).find({relations: ['participants', 'company']})
+  getRepository(Activity).find({relations: ['participants', 'company'], order: {id: "ASC"}})
   .then(activities => {
     return res.send(activities);
   })
@@ -55,6 +55,7 @@ export async function getActivityUsers(req, res) {
   createQueryBuilder(User)
   .innerJoin("User.activities", "ua")
   .where("ua.id=:activityId", {activityId: req.params.activityId})
+  .orderBy("User.id", "ASC")
   .getMany()
   .then(
     participants => res.status(200).send(participants), 

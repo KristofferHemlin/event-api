@@ -18,7 +18,7 @@ export async function createCompany(req, res) {
 }
 
 export async function getAllCompanies(req, res) {
-  await getRepository(Company).find({relations: ['employees', 'events', 'activities']})
+  await getRepository(Company).find({relations: ['employees', 'events', 'activities'], order: {id: "ASC"}})
   .then(response => {
     res.send(response);
   })
@@ -113,6 +113,7 @@ export async function getAllEventsForaCompany(req, res) {
     .createQueryBuilder()
     .leftJoinAndSelect("Event.company", "company")
     .where("Event.company.id = :companyId", { companyId: req.params.companyId })
+    .orderBy("Event.id", "ASC")
     .getMany()
   res.status(200).send(events)
 } 

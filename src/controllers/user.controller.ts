@@ -60,7 +60,7 @@ export async function createUser(req, res) {
 }
 
 export async function getAllUsers(req, res) {
- await getRepository(User).find({relations: ['company', 'events', 'activities', 'role']})
+ await getRepository(User).find({relations: ['company', 'events', 'activities', 'role'], order: {id: 'ASC'}})
  .then(response => {
   res.send(response);
  })
@@ -143,6 +143,7 @@ export async function getUserEventActivities(req: Request , res: Response) {
     .createQueryBuilder("Activity", "activity")
     .innerJoin("activity.participants", "ap", "ap.id=:userId", {userId: req.params.userId})
     .where("activity.event=:eventId", {eventId: req.params.eventId})
+    .orderBy("activity.id", "ASC")
     .getMany()
     .then(
       result => {

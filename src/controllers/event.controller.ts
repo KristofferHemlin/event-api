@@ -56,7 +56,7 @@ export async function updateEvent(req, res){
 }
 
 export async function getAllEvents(req, res){
-  getRepository(Event).find({relations: ['participants', 'activities', 'company']})
+  getRepository(Event).find({relations: ['participants', 'activities', 'company'], order: {id: "ASC"}})
   .then(events => {
     res.send(events);
   })
@@ -69,6 +69,7 @@ export async function getEventParticipants(req, res) {
   // get all users on specified event
   createQueryBuilder(User)
     .innerJoin("User.events", "ue", "ue.id=:eventId", {eventId: req.params.eventId})
+    .orderBy("User.id", "ASC")
     .getMany()
     .then(response => res.status(200).send(response), error => {console.log(error); res.status(500).send({message: "Could not fetch event participants"})})
 }
@@ -76,6 +77,7 @@ export async function getEventParticipants(req, res) {
 export async function getEventActivities(req, res) {
   createQueryBuilder(Activity)
   .where("Activity.event =:eventId", {eventId: req.params.eventId})
+  .orderBy("Activity.id", "ASC")
   .getMany()
   .then(
     activities => res.status(200).send(activities),
