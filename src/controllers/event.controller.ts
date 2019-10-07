@@ -67,9 +67,24 @@ export async function getAllEvents(req, res){
 
 export async function getEventParticipants(req, res) {
   // get all users on specified event
+
+  const sortableColumns = ["id", "firstName", "lastName", "companyDepartment"];
+  const sortableOrder = ["ASC", "DESC"];
+  const sortParams = req.query.sort;
+  let column, order;
+  if (sortParams) {
+    [column, order] = sortParams.split(":");
+  } else {
+    [column, order] = ["id", "ASC"];  
+  }
+
+  if (!sortableColumns.includes(column) || !sortableOrder.includes(order.toUpperCase())){
+    return res.status(400).send({message: `Specified column or order to sort by is wrong. Available columns: ${sortableColumns}. Available orders: ${sortableOrder}`});
+  }
+  
   createQueryBuilder(User)
     .innerJoin("User.events", "ue", "ue.id=:eventId", {eventId: req.params.eventId})
-    .orderBy("User.id", "ASC")
+    .orderBy(`User.${column}`, order.toUpperCase())
     .getMany()
     .then(response => res.status(200).send(response), error => {console.log(error); res.status(500).send({message: "Could not fetch event participants"})})
 }

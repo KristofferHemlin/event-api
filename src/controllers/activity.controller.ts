@@ -52,10 +52,25 @@ export async function getActivity(req, res) {
 }
 
 export async function getActivityUsers(req, res) {
+
+  const sortableColumns = ["id", "firstName", "lastName", "companyDepartment"];
+  const sortableOrder = ["ASC", "DESC"];
+  const sortParams = req.query.sort;
+  let column, order;
+  if (sortParams) {
+    [column, order] = sortParams.split(":");
+  } else {
+    [column, order] = ["id", "ASC"];  
+  }
+
+  if (!sortableColumns.includes(column) || !sortableOrder.includes(order.toUpperCase())){
+    return res.status(400).send({message: `Specified column or order to sort by is wrong. Available columns: ${sortableColumns}. Available orders: ${sortableOrder}`});
+  }
+
   createQueryBuilder(User)
   .innerJoin("User.activities", "ua")
   .where("ua.id=:activityId", {activityId: req.params.activityId})
-  .orderBy("User.id", "ASC")
+  .orderBy(`User.${column}`, order.toUpperCase())
   .getMany()
   .then(
     participants => res.status(200).send(participants), 
