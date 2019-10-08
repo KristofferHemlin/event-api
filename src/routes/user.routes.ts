@@ -216,6 +216,7 @@ function setUpUserRoutes(app){
   */
 
   app.put('/users/:userId/firstlogin', (req, res) => {userController.firstUpdate(req, res)});
+  app.put('/users/:userId/first-login-mobile', (req, res) => { userController.firstUpdateNoImage(req, res) });
   
 }
 
