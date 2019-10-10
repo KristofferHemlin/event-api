@@ -50,7 +50,7 @@ function setUpAuthenticationRoutes(app){
 
 
 /**
-  * @api {post} /account/:userId/password Change user password
+  * @api {post} /account/password Change user password
   *
   * @apiDescription This route changes the password for the current user. Verification with token.
   *
