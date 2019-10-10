@@ -197,6 +197,16 @@ function setUpUserRoutes(app){
    */
   
    app.get('/users/:userId/currentevent', (req, res) => userController.getCurrentEvent(req, res))
+
+
+   /**
+   * @api {get} /users/:userId/notifications Get all updates made for the user's activities
+   * @apiName GetActivityUpdateNotifications
+   * @apiGroup User
+   * 
+   * @apiParam {Number} userId The unique identifier for the user. 
+   */
+   app.get('/users/:userId/notifications', (req, res) => userController.getUpdateNotifications(req, res))
    
    /**
   * @api {put} /users/:userId/firstlogin First update when user log in for the first time

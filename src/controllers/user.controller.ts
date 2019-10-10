@@ -9,6 +9,7 @@ import * as fs from 'fs';
 import * as excelToJson from 'convert-excel-to-json';
 
 import * as multer from 'multer';
+import ActivityUpdateLog from '../entities/activitylog.entity';
 
 // Multer file upload handling.
 const storage = multer.diskStorage({
@@ -166,6 +167,25 @@ export async function getCurrentEvent(req, res){
       console.log(error)
       res.status(400).send({message: "Could not fetch events"})});
 }
+
+export async function getUpdateNotifications(req, res) {
+  createQueryBuilder(ActivityUpdateLog)
+    .innerJoinAndSelect("ActivityUpdateLog.activity", "activity")
+    .innerJoin("activity.participants", "user")
+    .where("user.id=:userId", {userId: req.params.userId})
+    .orderBy("ActivityUpdateLog.createdAt", "DESC")
+    .getMany()
+    .then(
+      updateLog => {
+        res.status(200).send(updateLog);
+      },
+      error => {
+        console.log(error);
+        res.status(500).send({message: "Error while trying to fetch notifications"})
+      }
+    )
+}
+
 
 // Helper function for removing an image. 
 const removeFile = (path) => {
