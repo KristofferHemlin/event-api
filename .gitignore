@@ -6,3 +6,4 @@ src/.DS_Store
 .DS_Store
 src/seeds/convertedCSV.json
 public/*
+dist
