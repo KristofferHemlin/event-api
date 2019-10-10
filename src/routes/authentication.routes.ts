@@ -67,6 +67,34 @@ function setUpAuthenticationRoutes(app){
     (req, res) => {
       authenticationController.changeUserPassword(req, res);
     });
+
+  
+    /**
+    * @api {post} /resetpassword Request mail with reset password url
+    *
+    * @apiDescription This route sends an email with reset token to user, if the email is registered.
+    *
+    * @apiName ResetPasswordEmailRequest
+    * @apiGroup Authentication
+    *
+    * @apiParam {String} email The user email
+    */  
+
+  app.post('/resetpassword', (req, res) => authenticationController.sendResetPasswordEmail(req, res))
+
+
+  /**
+  * @api {post} /resetpassword/:token Reset password for user
+  *
+  * @apiDescription This route changes user password if token is valid.
+  *
+  * @apiName ResetPassword
+  * @apiGroup Authentication
+  *
+  * @apiParam {String} token Token from reset password email
+  * @apiParam {String} password New password
+  */  
+  app.post('/resetpassword/:token', (req, res) => authenticationController.resetPassword(req, res))
 }
 
 export default setUpAuthenticationRoutes;
