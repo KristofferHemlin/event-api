@@ -1,11 +1,13 @@
 import * as bCrypt from 'bcrypt';
-import {getRepository, createQueryBuilder} from "typeorm";
+import {getRepository, createQueryBuilder, JoinTable} from "typeorm";
 import * as jwt from 'jsonwebtoken';
-// import * as authHelpers from '../helpers/authentication';
+import * as crypto from 'crypto';
 
 import Company from '../entities/company.entity';
 import User from '../entities/user.entity';
 import Role from '../entities/role.entity';
+
+import * as mail from '../modules/email';
 
 export async function authenticateUser(req, res) {
 
@@ -113,4 +115,89 @@ export async function changeUserPassword(req, res) {
       }, _ => res.status(400).send({message: "Cannot change password without current password"}))
     });
 }
+
+export async function sendResetPasswordEmail(req, res) {
+  const email = req.body.email;
+  
+  if (!email) {
+    return res.status(400).send({message: "No email provided"})
+  }
+
+  createQueryBuilder(User)
+    .where("email=:userEmail", {userEmail: email})  
+    .getOne()
+    .then(user => {
+      if (user) {
+        const token = crypto.randomBytes(20).toString('hex');
+        const expireDate = new Date(Date.now() + 3600000);  //Expires in 1h
+        var tokenHash = crypto.createHmac('sha256', process.env.JWT_SECRET).update(token).digest('hex');
+
+        user.resetPwdToken = tokenHash;
+        user.resetPwdExpireAt = expireDate;
+
+        getRepository(User).save(user).then( usr => {
+          const url = "http://localhost:3000/resetpassword/"+token;
+          const emailTemplate = mail.resetPasswordTemplate(user, url);
+
+          mail.transporter.sendMail(emailTemplate, (err, info) => {
+            if (err) {
+              console.log(err);
+              return res.status(500).send({message: "Error while sending email"})
+            }
+            console.log(info)
+            console.log("email skickat. "+info.response)
+          })
+        })
+      }
+
+      res.status(200).send({message: "Email sent to provided email, if email is registered"})
+      
+  }, error => {return res.status(500).send({message: "Error while verifying user email"})});
+}
+
+
+export async function resetPassword(req, res) {
+  const token = req.params.token;
+  const tokenHash = crypto.createHmac('sha256', process.env.JWT_SECRET).update(token).digest('hex');
+
+  createQueryBuilder(User)
+    .addSelect("User.resetPwdExpireAt")
+    .where("User.resetPwdToken=:tokenHash", {tokenHash: tokenHash})  
+    .getOne()
+    .then(user => {
+      const currentTime = new Date(Date.now());
+      if (!user) {
+        return res.status(401).send({message: "Authentication token not valid"});
+      } else if (user.resetPwdExpireAt < currentTime) {
+        user.resetPwdExpireAt = null;
+        user.resetPwdToken = null;
+        getRepository(User).save(user).then(
+          () => {}, error => console.log("Error while updating user: ", error))
+        return res.status(401).send({message: "Authentication token not valid"}) 
+      } else {
+        const newPassword = req.body.password;
+        if (!newPassword) {
+          return res.status(400).send({message: "No password specified"})
+        }
+        bCrypt.hash(newPassword, parseInt(process.env.SALT_ROUNDS, 10), (error, hash) => {
+          if (error) {
+            return res.status(500).send({message: "Error while processing the request. Password not updated"});
+          }
+          user.password = hash;
+          user.resetPwdExpireAt = null;
+          user.resetPwdToken = null;
+          getRepository(User).save(user).then(
+            _ => res.status(200).send({message: "Password updated"}),
+            error => res.status(500).send({message: "Could not update password"}))
+        })
+      }
+    }, error => {
+      console.log(error)
+      res.status(500).send({message: "Could not fetch user"})})
+    .catch(error => {
+      console.log(error);
+      res.status(500).send({message: "Could not process request"});
+    })
+}
+
 
