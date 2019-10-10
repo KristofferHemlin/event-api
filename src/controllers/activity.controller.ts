@@ -2,6 +2,7 @@ import { getRepository, createQueryBuilder } from 'typeorm';
 import Activity from '../entities/activity.entity';
 import Event from '../entities/event.entity';
 import User from '../entities/user.entity';
+import ActivityUpdateLog from '../entities/activitylog.entity';
 
 export async function createActivity(req, res) {
   const event = await getRepository(Event).findOne({id: req.body.eventId}, {relations: ['company']});
@@ -140,6 +141,10 @@ export async function updateActivity(req, res) {
       activity.endTime = req.body.endTime? req.body.endTime : activity.endTime;
       activity.location = req.body.location? req.body.location : activity.location;
       activity.niceToKnow = req.body.niceToKnow;
+      
+      let activityLog = new ActivityUpdateLog();
+      activityLog.activity = activity;
+      
       getRepository(Activity).save(activity).then(
         response => {
           createQueryBuilder(User)
@@ -160,7 +165,9 @@ export async function updateActivity(req, res) {
               console.log("Error while sending push notification:")
               console.log(error)
             });
-
+          getRepository(ActivityUpdateLog).save(activityLog).then(
+            res => {},
+            error => console.log("Could not log activity update for activity id: "+activityId));
           res.status(200).send(response)
         },
         error => res.status(500).send("Could not update activity"));

@@ -7,11 +7,13 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   JoinTable,
+  OneToMany,
 } from 'typeorm'
 
 import Event from './event.entity';
 import User from './user.entity';
 import Company from './company.entity';
+import ActivityUpdateLog from './activitylog.entity';
 
 @Entity()
 class Activity {
@@ -45,6 +47,9 @@ class Activity {
 
   @Column({nullable: true})
   niceToKnow: string;
+
+  @OneToMany(type => ActivityUpdateLog, activityLog => activityLog.activity)
+  updateLogs: ActivityUpdateLog[]
 
   @ManyToOne(type => Event, event => event.activities)
   event: Event;
