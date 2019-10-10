@@ -131,7 +131,8 @@ export async function addUserToActivity(req, res){
 }
 
 export async function updateActivity(req, res) {
-  getRepository(Activity).findOne({id: req.params.activityId}).then(activity  => {
+  const activityId = req.params.activityId;
+  getRepository(Activity).findOne({id: activityId}).then(activity  => {
     if (activity) {
       activity.title = req.body.title? req.body.title : activity.title;
       activity.description = req.body.description? req.body.description : activity.description;
@@ -140,11 +141,67 @@ export async function updateActivity(req, res) {
       activity.location = req.body.location? req.body.location : activity.location;
       activity.niceToKnow = req.body.niceToKnow;
       getRepository(Activity).save(activity).then(
-        response => res.status(200).send(response),
+        response => {
+          createQueryBuilder(User)
+            .innerJoin("User.activities", "au", "au.id=:activityId", {activityId: activityId})
+            .getMany()
+            .then(users => {
+              const recipients = users.map(user => user.id.toString());
+              var pushMessage = { 
+                app_id: process.env.ONESIGNAL_ID,
+                headings: {"en": "Activity Updated", "sv": "Aktivitet uppdaterad"},
+                contents: {"en": activity.title, "sv": activity.title},
+                android_group: "activity_update",
+                include_external_user_ids: recipients
+              };
+              sendPush(pushMessage);
+            })
+            .catch(error => {
+              console.log("Error while sending push notification:")
+              console.log(error)
+            });
+
+          res.status(200).send(response)
+        },
         error => res.status(500).send("Could not update activity"));
     } else {
       res.status(400).send("No activity found with provided id");
     }
   }, error => res.status(500).send({message: "Cannot fetch activity"}))
   .catch(error => res.status(500).send({message: "Could not update activity"}))
+}
+
+function sendPush(data) {
+  var https = require('https');
+
+  var headers = {
+    "Content-Type": "application/json; charset=utf-8"
+  };
+  
+  var options = {
+    host: "onesignal.com",
+    port: 443,
+    path: "/api/v1/notifications",
+    method: "POST",
+    headers: headers
+  };
+
+  var request = https.request(options, function(response) {  
+    response.on('data', function(data) {
+      const parsedData = JSON.parse(data.toString());
+      if (parsedData.errors) {
+        console.log("Error: could not send push:")
+        console.log(parsedData);
+      }
+    });
+  });
+
+  request.on('error', function(e) {
+    console.log("Error during OneSignal request:");
+    console.log(e);
+  });
+
+  request.write(JSON.stringify(data));
+  request.end();
+
 }
