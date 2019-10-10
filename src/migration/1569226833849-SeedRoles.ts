@@ -2,7 +2,7 @@ import {MigrationInterface, QueryRunner, getRepository} from "typeorm";
 import Role from '../entities/role.entity'
 
 // Seed file
-const ROLES = require('../seeds/roles.json');
+import ROLES from '../seeds/roles';
 
 export class SeedRoles1569226833849 implements MigrationInterface {
 

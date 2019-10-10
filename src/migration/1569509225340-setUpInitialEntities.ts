@@ -7,8 +7,9 @@ import Activity from '../entities/activity.entity';
 import Role from '../entities/role.entity';
 
 // Seed files.
-const JSON = require('../seeds/convertedCSV.json');
 import companySeed from '../seeds/company.seed';
+import JSON from '../seeds/convertedCSV';
+
 
 
 export class setUpInitialEntities1569509225340 implements MigrationInterface {

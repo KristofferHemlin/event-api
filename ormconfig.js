@@ -8,15 +8,15 @@ module.exports = {
    "synchronize": true,
    "logging": false,
    "entities": [
-      "src/entities/**/*.ts"
+      "dist/entities/**/*.js"
    ],
    "migrations": [
-      "src/migration/**/*.ts"
+      "dist/migration/**/*.js"
    ],
    "cli": {
       "migrationsDir": "src/migration"
    },
    "subscribers": [
-      "src/subscriber/**/*.ts"
+      "dist/subscriber/**/*.js"
    ]
 }

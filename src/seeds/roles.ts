@@ -1,4 +1,4 @@
-[
+export default [
     {
         "role": "COMPANY_MANAGER"
     },
