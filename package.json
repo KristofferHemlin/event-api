@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "ts-node ./src/server.ts",
-    "start": "nodemon ./dist/server.js",
+    "start": "node ./dist/server.js",
     "prod": "npm run build && npm run start",
     "migrate": "ts-node ./node_modules/typeorm/cli.js migration:run",
     "revert-migrate": "ts-node ./node_modules/typeorm/cli.js migration:revert"
