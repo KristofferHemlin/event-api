@@ -20,3 +20,4 @@ module.exports = {
       "src/subscriber/**/*.ts"
    ]
 }
+// Pls work
