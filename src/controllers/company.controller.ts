@@ -1,7 +1,7 @@
 import Company from '../entities/company.entity';
 import User from '../entities/user.entity';
 import Event from '../entities/event.entity';
-import {getRepository, createQueryBuilder} from "typeorm";
+import {getRepository, createQueryBuilder, getTreeRepository} from "typeorm";
 
 export async function createCompany(req, res) {
 
@@ -116,4 +116,15 @@ export async function getAllEventsForaCompany(req, res) {
     .orderBy("Event.id", "ASC")
     .getMany()
   res.status(200).send(events)
-} 
+}
+
+export async function getAllUsersForACompany(req, res) {
+  const users = await getRepository(User)
+  .createQueryBuilder()
+  .leftJoinAndSelect("User.company", "company")
+  .where("User.company.id = :companyId", { companyId: req.params.companyId })
+  .orderBy("User.id", "ASC")
+  .getMany()
+
+  res.status(200).send(users);
+}

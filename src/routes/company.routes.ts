@@ -124,6 +124,10 @@ function setUpCompanyRoutes(app){
     companyController.getAllEventsForaCompany(req, res);
   })
 
+  app.get('/companies/:companyId/users',(req: express.Request, res: express.Response) => {
+    companyController.getAllUsersForACompany(req, res);
+  }) 
+
 
 }
 
