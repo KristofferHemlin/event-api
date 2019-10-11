@@ -89,6 +89,22 @@ export async function getEventParticipants(req, res) {
     .then(response => res.status(200).send(response), error => {console.log(error); res.status(500).send({message: "Could not fetch event participants"})})
 }
 
+export async function getSingleEventParticipant(req, res) {
+  createQueryBuilder(User)
+  .innerJoin("User.events", "ue")
+  .where("ue.id = :eventId", { eventId: req.params.eventId})
+  .andWhere("User.id = :userId",   { userId: req.params.userId })
+  .getOne()
+  .then(user => {
+    res.status(200).send(user);
+  })
+  .catch(err => {
+    res.status(500).send({ message:'Error while fetching user.' });
+  })
+};
+
+
+
 export async function getEventActivities(req, res) {
   createQueryBuilder(Activity)
   .where("Activity.event =:eventId", {eventId: req.params.eventId})

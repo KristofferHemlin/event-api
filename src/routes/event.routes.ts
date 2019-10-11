@@ -6,9 +6,9 @@ function setUpEventRoutes(app) {
 
 
   // Middleware
-  app.use('/events', (req, res, next) => {
-    isAuthenticated(req, res, next);
-  })
+  // app.use('/events', (req, res, next) => {
+  //   isAuthenticated(req, res, next);
+  // })
 
   /**
   * @api {post} /event Create a new event
@@ -78,6 +78,17 @@ function setUpEventRoutes(app) {
 
   // Fetch all users on an event
   app.get("/events/:eventId/users", eventController.getEventParticipants);
+
+  /**
+  * @api {get} /events/:eventId/users/:userId
+  * @apiDescription This route fetches a single user for the specified event.
+  * @apiName GetSingleEventParticipant
+  * @apiGroup Event
+  * @apiParam {Number} eventId Unique identifier for the event
+  * @apiParam {Number} userId Unique identifier for the event
+  */
+
+  app.get("/events/:eventId/users/:userId", eventController.getSingleEventParticipant);
 
 
   /**
