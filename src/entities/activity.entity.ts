@@ -46,7 +46,7 @@ class Activity {
   coverImageUrl: string;
 
   @Column({nullable: true})
-  niceToKnow: string;
+  goodToKnow: string;
 
   @OneToMany(type => ActivityUpdateLog, activityLog => activityLog.activity)
   updateLogs: ActivityUpdateLog[]

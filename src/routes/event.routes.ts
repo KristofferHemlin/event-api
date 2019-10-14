@@ -22,6 +22,7 @@ function setUpEventRoutes(app) {
   * @apiParam {String} startTime (YYYY-MM-DD HH:MM) Date and time when the event starts.
   * @apiParam {String} endTime (YYYY-MM-DD HH:MM) Date and time when the event ends.
   * @apiParam {String} location Event location.
+  * @apiParam {String} goodToKnow Info that is good to know. 
   */
 
   // Create a new event.
@@ -44,6 +45,7 @@ function setUpEventRoutes(app) {
   * @apiParam {String} startTime (YYYY-MM-DD HH:MM) Date and time when the event starts.
   * @apiParam {String} endTime (YYYY-MM-DD HH:MM) Date and time when the event ends.
   * @apiParam {String} location Event location.
+  * @apiParam {String} goodToKnow Info that is good to know.
   */
 
   // Update an event.
