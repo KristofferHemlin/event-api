@@ -138,19 +138,21 @@ export async function sendResetPasswordEmail(req, res) {
         getRepository(User).save(user).then( usr => {
           const url = "http://localhost:3000/resetpassword/"+token;
           const emailTemplate = mail.resetPasswordTemplate(user, url);
-
+          
           mail.transporter.sendMail(emailTemplate, (err, info) => {
             if (err) {
               console.log(err);
               return res.status(500).send({message: "Error while sending email"})
             }
-            console.log(info)
-            console.log("email skickat. "+info.response)
+            // console.log(info)
+            // console.log("email skickat. "+info.response)
+            res.status(200).send({message: "Email sent"})
           })
         })
+      } else {
+          res.status(400).send({message: "Email not registered"});
       }
 
-      res.status(200).send({message: "Email sent to provided email, if email is registered"})
       
   }, error => {return res.status(500).send({message: "Error while verifying user email"})});
 }
