@@ -50,7 +50,7 @@ function setUpAuthenticationRoutes(app){
 
 
 /**
-  * @api {post} /account/password Change user password
+  * @api {put} /account/password Change user password
   *
   * @apiDescription This route changes the password for the current user. Verification with token.
   *
@@ -62,7 +62,7 @@ function setUpAuthenticationRoutes(app){
   */
 
   // Change password
-  app.post('/account/password', 
+  app.put('/account/password', 
     isAuthenticated,
     (req, res) => {
       authenticationController.changeUserPassword(req, res);
