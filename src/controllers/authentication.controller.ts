@@ -152,7 +152,8 @@ export async function sendResetPasswordEmail(req, res) {
 
       res.status(200).send({message: "Email sent to provided email, if email is registered"})
       
-  }, error => {return res.status(500).send({message: "Error while verifying user email"})});
+  }, error => {return res.status(500).send({message: "Error while verifying user email"})})
+  .catch(error => console.log("Error while sending email: ", error));
 }
 
 
