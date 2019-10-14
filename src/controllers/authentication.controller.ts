@@ -144,10 +144,14 @@ export async function sendResetPasswordEmail(req, res) {
               console.log(err);
               return res.status(500).send({message: "Error while sending email"})
             }
-            // console.log(info)
-            // console.log("email skickat. "+info.response)
+            console.log(info)
+            console.log("email skickat. "+info.response)
             res.status(200).send({message: "Email sent"})
           })
+        })
+        .catch(error => {
+          console.log("Error while updating user: ", error)
+          return res.status(500).send({message: "Error while processing the request."})
         })
       } else {
           res.status(400).send({message: "Email not registered"});
