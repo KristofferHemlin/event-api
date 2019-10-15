@@ -128,8 +128,7 @@ export async function sendResetPasswordEmail(req, res) {
     .getOne()
     .then(user => {
       if (user) {
-        //const token = crypto.randomBytes(20).toString('hex');
-        const token = "3019jfjd9di1993647637hfhf91u1hfh"
+        const token = crypto.randomBytes(20).toString('hex');
         const expireDate = new Date(Date.now() + 3600000);  //Expires in 1h
         var tokenHash = crypto.createHmac('sha256', process.env.JWT_SECRET).update(token).digest('hex');
 
