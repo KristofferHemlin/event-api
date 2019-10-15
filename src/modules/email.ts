@@ -35,7 +35,7 @@ const resetPasswordHtml = (user, url) => {
                     background:#4a90e2;
                     border-radius:2px;
                     padding:0;">
-                    <a href="https://www.claremont.se/" 
+                    <a href=${url}
                     style="Margin:0;
                     color:#fff;
                     display:inline-block;
@@ -44,11 +44,11 @@ const resetPasswordHtml = (user, url) => {
                     font-weight:500;
                     line-height:24px;
                     padding:4px 8px 4px 8px;
-                    text-decoration:none">Reset password</a>
+                    text-decoration:none;">Reset password</a>
                 </td>
             </tr>
         </table>
-        <p>We wish you a fun event!</p>
+        <p>Happy Kablaaming!</p>
         <p style="font-size: 10px;">P.S. If you did not request a password reset, you do not need to do anything.</p>
     </body>
     </html>`   
