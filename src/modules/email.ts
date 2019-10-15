@@ -9,14 +9,47 @@ export const transporter = nodemailer.createTransport({
 });
 
 export const resetPasswordTemplate = (user, url) => {
-    const from = `'Eventappen' <noreply@eventappen.se>`;
+    const from = `'Eventappen' <${process.env.EMAIL_USER}>`;
     const to = user.email;
-    const subject = "Återställa lösenord";
-
-    const html = `<h1>Hejsan!</h1>
-    <p>Detta är ett test och du kan bortse från detta mail.</p>
-    <p>Du kan testa att klicka på: </p>
-    <a href=${url}>länken här</a>`;
-    
+    const subject = "Reset password";
+    const html = resetPasswordHtml(user, url);
     return {from, to, subject, html}
+}
+
+const resetPasswordHtml = (user, url) => {
+    return `<!DOCTYPE html>
+    <html>
+    <head>
+    <style>
+    p  {
+      font-family: Arial,sans-serif;
+      font-size: 12px;
+    }
+    </style>
+    </head>
+    <body>
+        <p>${user.firstName}, did you forget your password? No worries, click the button below to make a new one.</p>
+        <table>
+            <tr style="padding:0;vertical-align:top">
+                <td style="
+                    background:#4a90e2;
+                    border-radius:2px;
+                    padding:0;">
+                    <a href="https://www.claremont.se/" 
+                    style="Margin:0;
+                    color:#fff;
+                    display:inline-block;
+                    font-family:Arial,sans-serif;
+                    font-size:13px;
+                    font-weight:500;
+                    line-height:24px;
+                    padding:4px 8px 4px 8px;
+                    text-decoration:none">Reset password</a>
+                </td>
+            </tr>
+        </table>
+        <p>We wish you a fun event!</p>
+        <p style="font-size: 10px;">P.S. If you did not request a password reset, you do not need to do anything.</p>
+    </body>
+    </html>`   
 }
