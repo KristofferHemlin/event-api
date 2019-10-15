@@ -201,6 +201,7 @@ function setUpUserRoutes(app){
 
    /**
    * @api {get} /users/:userId/notifications Get all updates made for the user's activities. Define number of returned notifications with query param limit.
+   * Default limit is 10.
    * @apiName GetActivityUpdateNotifications
    * @apiGroup User
    * 

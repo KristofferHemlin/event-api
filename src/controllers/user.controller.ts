@@ -169,7 +169,7 @@ export async function getCurrentEvent(req, res){
 }
 
 export async function getUpdateNotifications(req, res) {
-  const limit = req.query.limit;
+  const limit = req.query.limit? parseInt(req.query.limit): 10;
   createQueryBuilder(ActivityUpdateLog)
     .innerJoinAndSelect("ActivityUpdateLog.activity", "activity")
     .innerJoin("activity.participants", "user")
@@ -177,13 +177,9 @@ export async function getUpdateNotifications(req, res) {
     .orderBy("ActivityUpdateLog.createdAt", "DESC")
     .getMany()
     .then(
-      updateLog => {
-        if (limit) {
-          return res.status(200).send(updateLog.slice(0,limit));
-        }
-        else {
-          return res.status(200).send(updateLog);
-        }
+      updateLogs => {
+        const logs = removeDuplicates(updateLogs.slice(0, limit));
+        return res.status(200).send(logs);
       },
       error => {
         console.log(error);
@@ -192,6 +188,18 @@ export async function getUpdateNotifications(req, res) {
     )
 }
 
+//Helper function for removing duplicates, 
+function removeDuplicates(array) {
+  var filteredArray = [];
+  var activityIds = []
+  array.forEach(element => {
+    if (!activityIds.includes(element.activity.id)){
+      filteredArray.push(element);
+      activityIds.push(element.activity.id);  
+    }
+  });
+  return filteredArray;
+}
 
 // Helper function for removing an image. 
 const removeFile = (path) => {
