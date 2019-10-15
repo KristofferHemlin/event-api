@@ -28,6 +28,7 @@ const resetPasswordHtml = (user, url) => {
     </style>
     </head>
     <body>
+<<<<<<< Updated upstream
         <p>${user.firstName}, did you forget your password? No worries, click the button below to make a new one.</p>
         <table>
             <tr style="padding:0;vertical-align:top">
@@ -50,6 +51,16 @@ const resetPasswordHtml = (user, url) => {
         </table>
         <p>Happy Kablaaming!</p>
         <p style="font-size: 10px;">P.S. If you did not request a password reset, you do not need to do anything.</p>
+=======
+        <p>${user.firstName}, did you forget your password? </br> No worries, click the link below to make a new one:</p>
+        <a href=${url}
+            style="Margin:0; 
+            display:inline-block;
+            font-family:Arial,sans-serif;
+            font-size:13px;">Reset password</a>
+        <p>Happy Kablaaming!</p>
+        <p style="font-size: 10px;">P.S. If you did not request a password reset you do not need to do anything.</p>
+>>>>>>> Stashed changes
     </body>
     </html>`   
 }
