@@ -1,7 +1,7 @@
 const nodemailer = require("nodemailer");
 
 export const transporter = nodemailer.createTransport({
-    service: "Gmail",
+    service: "Outlook",
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASSWORD
@@ -9,9 +9,9 @@ export const transporter = nodemailer.createTransport({
 });
 
 export const resetPasswordTemplate = (user, url) => {
-    const from = `'Eventappen' <${process.env.EMAIL_USER}>`;
+    const from = `'Kablaam' <${process.env.EMAIL_USER}>`;
     const to = user.email;
-    const subject = "Reset password";
+    const subject = "Password reset";
     const html = resetPasswordHtml(user, url);
     return {from, to, subject, html}
 }
