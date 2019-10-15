@@ -1,6 +1,7 @@
 import * as express from 'express';
 import * as bodyParser from 'body-parser';
 import * as csp from 'helmet-csp';
+import * as morgan from 'morgan';
 
 import { createConnection } from 'typeorm';
 
@@ -17,11 +18,11 @@ import "reflect-metadata";
 // Sets up express application!
 const app = express();
 
-
-
 // Sets up express dependencies.
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
+
+app.use(morgan('combined'));
 
 app.use(csp({
   directives: {
