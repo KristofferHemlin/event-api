@@ -9,7 +9,7 @@ export const transporter = nodemailer.createTransport({
 });
 
 export const resetPasswordTemplate = (user, url) => {
-    const from = `'Eventappen' <${process.env.EMAIL_USER}>`;
+    const from = `'Eventappen' <noreply@eventappen.se>`;
     const to = user.email;
     const subject = "Återställa lösenord";
 
