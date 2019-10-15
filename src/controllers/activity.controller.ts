@@ -21,7 +21,7 @@ export async function createActivity(req, res) {
   activity.startTime = req.body.startTime;
   activity.endTime = req.body.endTime;
   activity.location = req.body.location;
-  activity.niceToKnow = req.body.niceToKnow;
+  activity.goodToKnow = req.body.goodToKnow;
 
   getRepository(Activity).save(activity)
   .then(response => {
@@ -140,7 +140,7 @@ export async function updateActivity(req, res) {
       activity.startTime = req.body.startTime? req.body.startTime : activity.startTime;
       activity.endTime = req.body.endTime? req.body.endTime : activity.endTime;
       activity.location = req.body.location? req.body.location : activity.location;
-      activity.niceToKnow = req.body.niceToKnow;
+      activity.goodToKnow = req.body.goodToKnow;
       
       let activityLog = new ActivityUpdateLog();
       activityLog.activity = activity;

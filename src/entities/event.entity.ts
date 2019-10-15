@@ -42,6 +42,9 @@ class Event {
   location: string;
 
   @Column({nullable: true})
+  goodToKnow: string;
+
+  @Column({nullable: true})
   coverImageUrl: string;
 
   @ManyToOne(type => Company, company => company.events)

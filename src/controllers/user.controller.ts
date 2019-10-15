@@ -244,9 +244,9 @@ export async function firstUpdate(req, res){
       return res.status(500).send(err);
     }
 
-    if(!req.file){
-      return res.status(400).send({ message: 'Missing profile image.'});
-    }
+    // if(!req.file){
+    //   return res.status(400).send({ message: 'Missing profile image.'});
+    // }
 
     getRepository(User).findOne({ id: userId })
       .then(user => {
@@ -260,7 +260,7 @@ export async function firstUpdate(req, res){
           removeFile(req.file.path)
           return res.status(400).send({ message: "Need to specify a new password" });
         }
-        user.profileImageUrl = req.file.filename;
+        // user.profileImageUrl = req.file.filename;
         user.firstName = req.body.firstName ? req.body.firstName : user.firstName;
         user.lastName = req.body.lastName ? req.body.lastName : user.lastName;
         user.email = req.body.email ? req.body.email : user.email;
@@ -274,7 +274,7 @@ export async function firstUpdate(req, res){
         });
       })
       .catch(error => {
-        removeFile(req.file.path)
+        // removeFile(req.file.path)
         if (error.response){
           return res.status(error.response.status).send(error.response.data);
         } else if (error.request) {

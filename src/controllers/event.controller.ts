@@ -20,6 +20,7 @@ export async function createEvent(req, res) {
   event.startTime = req.body.startTime;
   event.endTime = req.body.endTime;
   event.location = req.body.location;
+  event.goodToKnow = req.body.goodToKnow;
 
   getRepository(Event).save(event)
   .then(response => {
@@ -40,6 +41,7 @@ export async function updateEvent(req, res){
   event.startTime = req.body.startTime? req.body.startTime: event.startTime;
   event.endTime = req.body.endTime? req.body.endTime: event.endTime;
   event.location = req.body.location? req.body.location: event.location;
+  event.goodToKnow = req.body.goodToKnow;
 
   getRepository(Event).save(event)
   .then(response => {

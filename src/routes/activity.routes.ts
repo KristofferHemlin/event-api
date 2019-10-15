@@ -57,7 +57,7 @@ function setUpActivityRoutes(app) {
   * @apiParam {String} startTime (YYYY-MM-DD HH:MM) Date and time when the activity starts.
   * @apiParam {String} endTime (YYYY-MM-DD HH:MM) Date and time when the activity ends.
   * @apiParam {String} location Activity location.
-  * @apiParam {String} niceToKnow Things that is good to know about the activity
+  * @apiParam {String} goodToKnow Things that is good to know about the activity
   */
 
   app.post('/activities', (req: express.Request, res: express.Response) => {
@@ -108,7 +108,7 @@ function setUpActivityRoutes(app) {
   * @apiParam {String} startTime (YYYY-MM-DD HH:MM) Date and time when the activity starts.
   * @apiParam {String} endTime (YYYY-MM-DD HH:MM) Date and time when the activity ends.
   * @apiParam {String} location Activity location.
-  * @apiParam {String} niceToKnow Things that is good to know about the activity
+  * @apiParam {String} goodToKnow Things that is good to know about the activity
   */
 
   app.put('/activities/:activityId', (req: express.Request, res: express.Response) => {
