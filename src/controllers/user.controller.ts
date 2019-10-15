@@ -169,6 +169,7 @@ export async function getCurrentEvent(req, res){
 }
 
 export async function getUpdateNotifications(req, res) {
+  const limit = req.query.limit;
   createQueryBuilder(ActivityUpdateLog)
     .innerJoinAndSelect("ActivityUpdateLog.activity", "activity")
     .innerJoin("activity.participants", "user")
@@ -177,7 +178,12 @@ export async function getUpdateNotifications(req, res) {
     .getMany()
     .then(
       updateLog => {
-        res.status(200).send(updateLog);
+        if (limit) {
+          return res.status(200).send(updateLog.slice(0,limit));
+        }
+        else {
+          return res.status(200).send(updateLog);
+        }
       },
       error => {
         console.log(error);
