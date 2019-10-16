@@ -17,25 +17,15 @@ export const resetPasswordTemplate = (user, url) => {
 }
 
 const resetPasswordHtml = (user, url) => {
-    return `<!DOCTYPE html>
-    <html>
-    <head>
-    <style>
-    p  {
-      font-family: Arial,sans-serif;
-      font-size: 12px;
-    }
-    </style>
-    </head>
-    <body>
-        <p>${user.firstName}, did you forget your password? </br> No worries, click the link below to make a new one:</p>
+    return `
+        <p style="font-family: Arial,sans-serif;
+        font-size: 12px;">${user.firstName}, did you forget your password? </br> No worries, click the link below to make a new one:</p>
         <a href=${url}
             style="Margin:0; 
             display:inline-block;
             font-family:Arial,sans-serif;
             font-size:13px;">Reset password</a>
-        <p>Happy Kablaaming!</p>
-        <p style="font-size: 10px;">P.S. If you did not request a password reset you do not need to do anything.</p>
-    </body>
-    </html>`   
+        <p style="font-family: Arial,sans-serif;
+        font-size: 12px;">Happy Kablaaming!</p>
+        <p style="font-size: 10px;">P.S. If you did not request a password reset you do not need to do anything.</p>`   
 }
