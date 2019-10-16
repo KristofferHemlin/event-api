@@ -136,7 +136,7 @@ export async function sendResetPasswordEmail(req, res) {
         user.resetPwdExpireAt = expireDate;
 
         getRepository(User).save(user).then( usr => {
-          const url = "evently://resetpassword/"+token;
+          const url = "https://eventapp-master-api.azurewebsites.net/deeplink/"+token;
           const emailTemplate = mail.resetPasswordTemplate(user, url);
           
           mail.transporter.sendMail(emailTemplate, (err, info) => {
@@ -165,6 +165,10 @@ export async function sendResetPasswordEmail(req, res) {
 });
 }
 
+export async function redirectDeepLink(req, res) {
+  const token = req.params.token
+  res.redirect('evently://resetpassword/'+token);
+}
 
 export async function resetPassword(req, res) {
   const token = req.params.token;

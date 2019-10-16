@@ -83,6 +83,8 @@ function setUpAuthenticationRoutes(app){
   app.post('/resetpassword', (req, res) => authenticationController.sendResetPasswordEmail(req, res))
 
 
+  app.get('/deeplink/:token', (req, res) => authenticationController.redirectDeepLink(req, res))
+
   /**
   * @api {post} /resetpassword/:token Reset password for user
   *
