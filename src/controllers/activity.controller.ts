@@ -24,32 +24,38 @@ export async function createActivity(req, res) {
   activity.goodToKnow = req.body.goodToKnow;
 
   getRepository(Activity).save(activity)
-  .then(response => {
-    return res.send({
-      message: `Successfully created the activity ${req.body.title}.`
-    })
-  })
+  .then(activity => {
+    return res.status(201).send({ 
+        data: activity,
+        message: `Activity ${activity.title} created.`})})
   .catch(error => {
-    return res.send({
-      message: `Could not create the activity ${req.body.title}.`
+        return res.status(500).send({
+        type: error.name,
+        message: `Could not create the activity ${req.body.title}.`
     })
   })
-
 }
 
 export async function getAllActivities(req, res) {
   getRepository(Activity).find({relations: ['participants', 'company'], order: {id: "ASC"}})
   .then(activities => {
-    return res.send(activities);
+    return res.status(200).send(activities);
   })
   .catch(error => {
-    return res.send(error);
+    return res.status(500).send({
+      type: error.name, 
+      message: "Could not fetch activities"
+    });
   })
 }
 
 export async function getActivity(req, res) {
   getRepository(Activity).findOne({id: req.params.activityId})
-    .then(activity => res.status(200).send(activity), error => res.status(500).send({message: "The activity could not be fetched."}));
+    .then(
+      activity => res.status(200).send(activity), 
+    error => res.status(500).send({
+      type: error.name,
+      message: "Could not fetch activity."}));
 }
 
 export async function getActivityUsers(req, res) {
@@ -76,9 +82,9 @@ export async function getActivityUsers(req, res) {
   .then(
     participants => res.status(200).send(participants), 
     error => {
-      console.log(error)
-      res.status(500).send("Could not fetch activity participants")})
-  .catch(error => res.status(500).send("Error while fetching participants"))
+      console.log("Error while fetching users for activity "+error);
+      res.status(500).send({message: "Could not fetch activity participants"})})
+  .catch(error => res.status(500).send({message: "Error while fetching participants"}))
 }
 
 export async function deleteActivity(req, res) {
@@ -88,10 +94,13 @@ export async function deleteActivity(req, res) {
 
   getRepository(Activity).remove(activity)
   .then(response => {
-    res.send({message: `Successfully deleted activity ${title}.`})
+    res.status(204).send()
   })
   .catch(error => {
-    res.send(error)
+    res.status(500).send({
+      type: error.name,
+      message: "Could not delete activity"
+    })
   })
 }
 
@@ -101,14 +110,14 @@ export async function addUserToActivity(req, res){
 
   // Check so that he activity is not empty.
   if(!activity){
-    return res.send({
+    return res.status(400).send({
       message: 'Could not find an activity with the provided id.',
     })
   }
 
   // Check so that he user is not empty.
   if(!user){
-    return res.send({
+    return res.status(400).send({
       message: 'Could not find a user with the provided id.',
     })
   }
@@ -119,13 +128,16 @@ export async function addUserToActivity(req, res){
 
     getRepository(Activity).save(activity)
     .then(response => {
-      return res.send({message: `Successfully added ${user.firstName} ${user.lastName} to activity ${activity.title}.`})
+      return res.status(200).send({message: `Successfully added ${user.firstName} ${user.lastName} to activity ${activity.title}.`})
     })
     .catch(error => {
-      return res.send(error);
+      return res.status(500).send({
+        type: error.name,
+        message: "Could not add user to the activity"
+      });
     })
   } else {
-    return res.send({
+    return res.status(400).send({
       message: 'The user is not a participant in the activity parent event!',
     })
   }
@@ -170,9 +182,9 @@ export async function updateActivity(req, res) {
             error => console.log("Could not log activity update for activity id: "+activityId));
           res.status(200).send(response)
         },
-        error => res.status(500).send("Could not update activity"));
+        error => res.status(500).send({message: "Could not update activity"}));
     } else {
-      res.status(400).send("No activity found with provided id");
+      res.status(400).send({message: "No activity found with provided id"});
     }
   }, error => res.status(500).send({message: "Cannot fetch activity"}))
   .catch(error => res.status(500).send({message: "Could not update activity"}))

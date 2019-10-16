@@ -90,7 +90,7 @@ function setUpEventRoutes(app) {
   * @apiParam {Number} userId Unique identifier for the event
   */
 
-  app.get("/events/:eventId/users/:userId", eventController.getSingleEventParticipant);
+  app.get("/events/:eventId/users/:userId", eventController.getEventParticipant);
 
 
   /**

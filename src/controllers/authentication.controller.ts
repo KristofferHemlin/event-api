@@ -21,8 +21,8 @@ export async function authenticateUser(req, res) {
 
   // If no user could be found.
   if(!theUser){
-    return res.status(500).send({
-      message: 'There exists no  for the provided email.',
+    return res.status(401).send({
+      message: 'There exists no user for the provided email.',
     })
   }
 
@@ -51,7 +51,6 @@ export async function authenticateUser(req, res) {
     token: token,
     user: theUser,
   });
-
 }
 
 export async function signUpNewUser(req, res) {
@@ -80,11 +79,11 @@ export async function signUpNewUser(req, res) {
 
   getRepository(User).save(user)
   .then(response => {
-    res.send(response);
+    res.status(200).send(response);
   })
   .catch(error => {
     console.log(error);
-    res.send(error);
+    res.status(500).send({message: "Could not create new user"});
   })
 }
 
@@ -141,11 +140,9 @@ export async function sendResetPasswordEmail(req, res) {
           
           mail.transporter.sendMail(emailTemplate, (err, info) => {
             if (err) {
-              console.log(err);
+              console.log("Error while trying to send email: "+err);
               return res.status(500).send({message: "Error while sending email"})
             }
-            console.log(info)
-            console.log("email skickat. "+info.response)
             res.status(200).send({message: "Email sent"})
           })
         })
@@ -156,8 +153,6 @@ export async function sendResetPasswordEmail(req, res) {
       } else {
           res.status(400).send({message: "Email not registered"});
       }
-
-      
   }, error => {return res.status(500).send({message: "Error while verifying user email"})})
   .catch(error => {
     console.log("Error while sending email: ", error);
@@ -206,10 +201,10 @@ export async function resetPassword(req, res) {
         })
       }
     }, error => {
-      console.log(error)
+      console.log("Error when trying to fetch user: "+error)
       res.status(500).send({message: "Could not fetch user"})})
     .catch(error => {
-      console.log(error);
+      console.log("Error while trying to update password"+error);
       res.status(500).send({message: "Could not process request"});
     })
 }

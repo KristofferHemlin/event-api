@@ -10,30 +10,30 @@ export async function createCompany(req, res) {
 
   await getRepository(Company).save(company)
   .then(response => {
-    res.send(response);
+    res.status(200).send(response);
   })
   .catch(error => {
-    res.send(error);
+    res.status(500).send({message: "Error while trying to create company"});
   })
 }
 
 export async function getAllCompanies(req, res) {
   await getRepository(Company).find({relations: ['employees', 'events', 'activities'], order: {id: "ASC"}})
   .then(response => {
-    res.send(response);
+    res.status(200).send(response);
   })
   .catch(error => {
-    res.send(error);
+    res.status(500).send({message: "Could not fetch companies"});
   })
 }
 
 export async function getCompanyById(req, res) {
   await getRepository(Company).findOne({ id: req.params.companyId })
   .then(response => {
-    res.send(response);
+    res.status(200).send(response);
   })
   .catch(error => {
-    res.send(error);
+    res.status(500).send({message: "Error while trying to fetch company"});
   })
 }
 
@@ -44,10 +44,10 @@ export async function updateCompany(req, res) {
 
   await getRepository(Company).save(companyToUpdate)
   .then(response => {
-    res.send(response);
+    res.status(200).send(response);
   })
   .catch(error => {
-    res.send(error);
+    res.status(500).send({message: "Error while trying to update company. Company not updated."});
   })
 }
 
@@ -57,14 +57,14 @@ export async function removeUserFromCompany(req, res) {
 
   // Check if the company exists.
   if(!theCompany){
-    return res.send({
+    return res.status(400).send({
       message: 'No company with that id exists.'
     });
   }
 
   // Check if the user exists.
   if(!theUser){
-    return res.send({
+    return res.status(400).send({
       message: 'No user with that id exists.'
     });
   }
@@ -79,15 +79,13 @@ export async function removeUserFromCompany(req, res) {
 
     getRepository(User).save(theUser)
     .then(response => {
-      return res.send({
-        message: `The user ${theUser.firstName} ${theUser.lastName} was removed from the company ${theCompany.title}.`
-      })
+      return res.status(204).send();
     })
     .catch(error => {
       return res.send(error);
     })
   } else {
-    return res.send({
+    return res.status(400).send({
       message: 'User was not found in the company!',
     })
   }
@@ -97,14 +95,14 @@ export async function deleteCompany(req, res){
   let company = await getRepository(Company).findOne({ id: req.params.companyId });
   await getRepository(Company).remove(company)
   .then(response => {
-    res.send(response);
+    res.status(204).send();
   })
   .catch(error => {
-    res.send(error);
+    res.status(500).send({message: "Error while trying to delete company. Company not deleted."});
   })
 }
 
-export async function getAllEventsForaCompany(req, res) {
+export async function getAllEventsForCompany(req, res) {
 
   // If the user is an admin use the companyId param, 
   // else use the req.decoded.companyId param.
@@ -115,16 +113,22 @@ export async function getAllEventsForaCompany(req, res) {
     .where("Event.company.id = :companyId", { companyId: req.params.companyId })
     .orderBy("Event.id", "ASC")
     .getMany()
+    .catch(error => {
+      res.status(500).send({message: "Error while trying to fetch company events."})
+    })
   res.status(200).send(events)
 }
 
-export async function getAllUsersForACompany(req, res) {
+export async function getAllUsersForCompany(req, res) {
   const users = await getRepository(User)
   .createQueryBuilder()
   .leftJoinAndSelect("User.company", "company")
   .where("User.company.id = :companyId", { companyId: req.params.companyId })
   .orderBy("User.id", "ASC")
   .getMany()
+  .catch(error => {
+    res.status(500).send({message: "Error while trying to fetch company users."})
+  })
 
   res.status(200).send(users);
 }

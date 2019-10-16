@@ -121,11 +121,11 @@ function setUpCompanyRoutes(app){
 
   // Get all events for a company.
   app.get('/companies/:companyId/events', (req: express.Request, res: express.Response) => {
-    companyController.getAllEventsForaCompany(req, res);
+    companyController.getAllEventsForCompany(req, res);
   })
 
   app.get('/companies/:companyId/users',(req: express.Request, res: express.Response) => {
-    companyController.getAllUsersForACompany(req, res);
+    companyController.getAllUsersForCompany(req, res);
   }) 
 
 

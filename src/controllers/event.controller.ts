@@ -8,7 +8,7 @@ export async function createEvent(req, res) {
   let company = await getRepository(Company).findOne({ id: req.body.companyId },{relations: ['events']});
 
   if(!company){
-    return res.status(500).send({
+    return res.status(400).send({
       message: 'No company was found with the provided company id.',
     });
   }
@@ -23,47 +23,46 @@ export async function createEvent(req, res) {
   event.goodToKnow = req.body.goodToKnow;
 
   getRepository(Event).save(event)
-  .then(response => {
-    return res.send({
-      message: `Successfully saved the event ${event.title}.`,
-    })
+  .then(event => {
+    return res.status(200).send(event)
   })
   .catch(error => {
-    return res.send(error);
+    return res.status(500).send({message: "Error while creating event. Event not created."});
   })
 }
 
 export async function updateEvent(req, res){
   const event = await getRepository(Event).findOne({id: req.params.eventId });
 
-  event.title = req.body.title? req.body.title: event.title;
-  event.description = req.body.description? req.body.description: event.description;
-  event.startTime = req.body.startTime? req.body.startTime: event.startTime;
-  event.endTime = req.body.endTime? req.body.endTime: event.endTime;
-  event.location = req.body.location? req.body.location: event.location;
-  event.goodToKnow = req.body.goodToKnow;
-
-  getRepository(Event).save(event)
-  .then(response => {
-    res.send({
-      message: `Successfully updated event ${event.id}.`,
+  if (event) {
+    event.title = req.body.title? req.body.title: event.title;
+    event.description = req.body.description? req.body.description: event.description;
+    event.startTime = req.body.startTime? req.body.startTime: event.startTime;
+    event.endTime = req.body.endTime? req.body.endTime: event.endTime;
+    event.location = req.body.location? req.body.location: event.location;
+    event.goodToKnow = req.body.goodToKnow;
+  
+    getRepository(Event).save(event)
+    .then(response => {
+      res.status(200).send(response)
     })
-  })
-  .catch(error => {
-    res.send({
-      message: `Could not update event ${event.id}.`,
+    .catch(error => {
+      res.status(500).send({
+        message: `Could not update event ${event.id}.`,
+      })
     })
-  })
-
+  } else {
+    res.status(400).send({message: "Specified event does not exit."})
+  }
 }
 
 export async function getAllEvents(req, res){
   getRepository(Event).find({relations: ['participants', 'activities', 'company'], order: {id: "ASC"}})
   .then(events => {
-    res.send(events);
+    res.status(200).send(events);
   })
   .catch(error => {
-    res.send(error);
+    res.status(500).send({message:"Could not fetch events."});
   })
 }
 
@@ -81,17 +80,24 @@ export async function getEventParticipants(req, res) {
   }
 
   if (!sortableColumns.includes(column) || !sortableOrder.includes(order.toUpperCase())){
-    return res.status(400).send({message: `Specified column or order to sort by is wrong. Available columns: ${sortableColumns}. Available orders: ${sortableOrder}`});
+    return res.status(400).send(
+      {message: `Specified column or order to sort by is wrong.`});
   }
   
   createQueryBuilder(User)
     .innerJoin("User.events", "ue", "ue.id=:eventId", {eventId: req.params.eventId})
     .orderBy(`User.${column}`, order.toUpperCase())
     .getMany()
-    .then(response => res.status(200).send(response), error => {console.log(error); res.status(500).send({message: "Could not fetch event participants"})})
+    .then(
+      response => res.status(200).send(response), 
+      error => {
+        console.log("Error while fetching event participants: "+error); 
+        res.status(500).send({message: "Could not fetch event participants"})
+      }
+    )
 }
 
-export async function getSingleEventParticipant(req, res) {
+export async function getEventParticipant(req, res) {
   createQueryBuilder(User)
   .innerJoin("User.events", "ue")
   .where("ue.id = :eventId", { eventId: req.params.eventId})
@@ -115,42 +121,44 @@ export async function getEventActivities(req, res) {
   .then(
     activities => res.status(200).send(activities),
     error => {
-      console.log(error);
+      console.log("Error while trying to fetch event activities: "+error);
       res.status(500).send({message: "Could not fetch event activities"})}
   )
   .catch(error => {
-    console.log(error);
+    console.log("Error while trying to fetch event activities: "+error);
     res.status(500).send({message: "Error while fetching event activities"})
   })
 }
 
-
-// FIXME: Implement check to see if user is part of company.
 export async function addUserToEvent(req, res){
   const user = await getRepository(User).findOne({id: req.body.userId }, {relations: ['company']});
   const event = await getRepository(Event).findOne({ id: req.body.eventId }, {relations: ['participants', 'company']});
 
+  if (!event) {
+    return res.status(400).send({message: "No event exists for the provided id."})
+  }
+
   if(!user){
-    return res.send({
+    return res.status(400).send({
       message: 'No user exists for the provided id.',
     })
   }
 
   if (!event){
-    return res.send({
+    return res.status(400).send({
       message: 'No event exists for the provided id.',
     })
   }
 
   if(!user.company){
-    return res.send({
+    return res.status(400).send({
       message: 'User is not associated to any company.',
     })
   }
 
   // Check if the user is from the same company.
   if(user.company.id !== event.company.id){
-    return res.send({
+    return res.status(400).send({
       message: 'The user is not assigned to the same company as the event!',
     })
   }
@@ -159,12 +167,12 @@ export async function addUserToEvent(req, res){
 
   await getRepository(Event).save(event)
   .then(response => {
-    res.send({
+    res.status(200).send({
       message: `${user.firstName} ${user.lastName} successfully added to the event ${event.title}!`,
     })
   })
   .catch(error => {
-    res.send({
+    res.status(500).send({
       message: `Could not add the user ${user.firstName} ${user.lastName} to the event ${event.title}.`,
     })
   })
@@ -175,7 +183,7 @@ export async function deleteEvent(req, res){
   let event = await getRepository(Event).findOne({id: req.params.eventId }, {relations: ['activities']});
 
   if(!event){
-    return res.send({
+    return res.status(400).send({
       message: 'No event found for the provided id.',
     })
   }
@@ -185,18 +193,16 @@ export async function deleteEvent(req, res){
   .then(response => {
       getRepository(Event).remove(event)
       .then(response2 => {
-        return res.send({
-          message: `The event ${event.title} was deleted.`,
-        })
+        return res.status(204).send();
       })
       .catch(error2 => {
-        return res.send({
-          message: error2,
+        return res.status(500).send({
+          message: "Could not remove event."
         })
       })
   })
   .catch(error => {
-    return res.send({
+    return res.status(500).send({
       message: error,
     })
   })
@@ -208,21 +214,21 @@ export async function removeUserFromEvent(req, res){
 
   // ...Check if the user was empty.
   if(!user){
-    return res.send({
+    return res.status(400).send({
       message: 'No user could be found with that id.',
     })
   }
 
   // ...Check if the event was empty.
   if(!event){
-    return res.send({
+    return res.status(400).send({
       message: 'Could not find any event with that id.',
     })
   }
 
   // Check if the user is a participant of the event.
   if(!event.participants.find(participant => participant.id === user.id)){
-    return res.send({
+    return res.status(400).send({
       message: 'The user is not a participant of the event.',
     });
   }
@@ -243,12 +249,12 @@ export async function removeUserFromEvent(req, res){
 
   await getRepository(User).save(user)
   .then(response => {
-    res.send({
+    res.status(200).send({
       message: `${user.firstName} ${user.lastName} successfully removed from the ${event.title}.`,
     })
   })
   .catch(error => {
-    res.send({
+    res.status(500).send({
       message: `Could not remove ${user.firstName} ${user.lastName} from the event ${event.title}.`,
     })
   })
