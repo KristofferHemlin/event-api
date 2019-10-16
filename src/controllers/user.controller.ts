@@ -188,7 +188,7 @@ export async function getUpdateNotifications(req, res) {
     )
 }
 
-//Helper function for removing duplicates, 
+//Helper function for removing duplicates, could be improved
 function removeDuplicates(array) {
   var filteredArray = [];
   var activityIds = []

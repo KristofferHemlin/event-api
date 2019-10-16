@@ -136,7 +136,7 @@ export async function sendResetPasswordEmail(req, res) {
         user.resetPwdExpireAt = expireDate;
 
         getRepository(User).save(user).then( usr => {
-          const url = "http://localhost:3000/resetpassword/"+token;
+          const url = "evently://resetpassword/"+token;
           const emailTemplate = mail.resetPasswordTemplate(user, url);
           
           mail.transporter.sendMail(emailTemplate, (err, info) => {
