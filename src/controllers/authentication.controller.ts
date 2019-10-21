@@ -27,29 +27,39 @@ export async function authenticateUser(req, res) {
   }
 
   // If the password is wrong.
-  if(req.body.password === '' || !bCrypt.compareSync(req.body.password, theUser.password)){
-    return res.status(401).send({
-      message: 'The wrong password was provided.',
-    })
-  }
+  console.time("compare time");
 
-  // If valid credentials were provided,
-  let payload = {
-    user_id: theUser.id,
-    company_id: theUser.company.id,
-    role: theUser.role
-  }
+  bCrypt.compare(req.body.password, theUser.password).then(resp => {
+    if (!resp) {
+      console.timeEnd("compare time");
+      return res.status(401).send({
+        message: 'The wrong password was provided.',
+      })  
+    } else {
+      // If valid credentials were provided,
+      console.timeEnd("compare time");
+      let payload = {
+        user_id: theUser.id,
+        company_id: theUser.company.id,
+        role: theUser.role
+      }
 
-  theUser.password = undefined;
+      theUser.password = undefined;
 
-  let token = jwt.sign(payload, process.env.JWT_SECRET, {
-    expiresIn: '24h',
-  });
-
-  return res.json({
-    message: 'Authentication successfull! Enjoy your stay!',
-    token: token,
-    user: theUser,
+      let token = jwt.sign(payload, process.env.JWT_SECRET, {
+        expiresIn: '24h',
+      });
+      return res.json({
+        message: 'Authentication successfull! Enjoy your stay!',
+        token: token,
+        user: theUser,
+      });
+    }
+  }).catch(error => {
+    console.error("Error while authenticating user:", error);
+    return res.status(500).send({
+      type: error.name,
+      message: "Error while trying to authenticate user."});
   });
 }
 
