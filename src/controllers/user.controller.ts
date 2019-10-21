@@ -53,19 +53,23 @@ export async function createUser(req, res) {
 
   await getRepository(User).save(user)
   .then(response => {
-    res.status(200).send(response);
+    return res.status(200).send(response);
   })
   .catch(error => {
-    res.status(500).send({message: "Could not create new user"});
+    console.error("Error while creating new user:", error);
+    return res.status(500).send({
+      type: error.name,
+      message: "Could not create new user"});
   })
 }
 
 export async function getAllUsers(req, res) {
  await getRepository(User).find({relations: ['company', 'events', 'activities', 'role'], order: {id: 'ASC'}})
- .then(response => {
+  .then(response => {
   res.status(200).send(response);
  })
- .catch(error => {
+  .catch(error => {
+    console.error("Error while fetching all users:", error)
   res.status(500).send({message: "Could not fetch all users"});
  })
 }
@@ -76,11 +80,14 @@ export async function getUserInfoForCurrentUser(req, res) {
     if (user) {
       return res.status(200).send(user);
     } else {
-      return res.status(400).send({message: "No user exists for the provided id."});
+      return res.status(404).send({message: "No user exists for the provided id."});
     }
   })
   .catch(error => {
-    return res.status(500).send({message: "Could not fetch user."});
+    console.error("Error while fetching user:", error);
+    return res.status(500).send({
+      type: error.name,
+      message: "Could not fetch user."});
   })
 }
 
@@ -89,13 +96,16 @@ export async function getUserById(req, res){
   await getRepository(User).findOne({ id: req.params.userId }, {relations: ['company', 'activities', 'events']})
   .then(user => {
     if (user) {
-      res.status(200).send(user);
+      return res.status(200).send(user);
     } else {
-      res.status(400).send({message: "No user exists for the provided id"});
+      return res.status(404).send({message: "No user exists for the provided id"});
     }
   })
   .catch(error => {
-    res.send(error);
+    console.error("Error while fetching user:", error);
+    res.status(500).send({
+      type: error.name,
+      message: "Error while fetching user."});
   })
 }
 
@@ -103,7 +113,7 @@ export async function updateUser(req, res){
   let userToUpdate = await getRepository(User).findOne({ id: req.params.userId });
 
   if (!userToUpdate){
-    return res.status(400).send({message: "No user exists for the provided id."})
+    return res.status(404).send({message: "No user exists for the provided id."})
   }
 
   userToUpdate.firstName = req.body.firstName? req.body.firstName: userToUpdate.firstName;
@@ -116,10 +126,11 @@ export async function updateUser(req, res){
 
   await getRepository(User).save(userToUpdate)
   .then(response => {
-    res.status(200).send(response);
+    return res.status(200).send(response);
   })
   .catch(error => {
-    res.status(500).send({message: "Could not update user."});
+    console.error("Error while updating user:", error);
+    return res.status(500).send({message: "Could not update user."});
   })
 }
 
@@ -131,10 +142,11 @@ export async function deleteUser(req, res){
   
   await getRepository(User).remove(user)
   .then(response => {
-    res.status(204).send();
+    return res.status(204).send();
   })
   .catch(error => {
-    res.status(500).send({message: "Could not delete user."});
+    console.error("Error while removing user:", error);
+    return res.status(500).send({message: "Could not delete user."});
   })
 }
 
@@ -143,23 +155,26 @@ export async function addCompanyToUser(req, res){
   let company = await getRepository(Company).findOne({ id: req.body.companyId });
 
   if (!user) {
-    return res.status(400).send({message: "No user exists for the provided id"})
+    return res.status(404).send({message: "No user exists for the provided id"})
   }
 
   if (!company) {
-    return res.status(400).send({message: "No company exists for the provided id"})
+    return res.status(404).send({message: "No company exists for the provided id"})
   }
 
   user.company = company;
 
   await getRepository(User).save(user)
   .then(response => {
-    res.status(200).send({
+    return res.status(200).send({
       message: `User ${user.firstName} ${user.lastName} was successfully added to the company ${company.title}.`,
     });
   })
   .catch(error => {
-    res.status(500).send({message: "Could not add user to the company."});
+    console.error("Error while adding user to company:", error);
+    return res.status(500).send({
+      type: error.name,
+      message: "Could not add user to the company."});
   })
 }
 
@@ -172,11 +187,13 @@ export async function getUserEventActivities(req: Request , res: Response) {
     .getMany()
     .then(
       result => {
-        res.status(200).send(result);
+        return res.status(200).send(result);
       }, 
       error => {
-        console.log("An error occurred when processing the query: "+error);
-        res.status(500).send({message: "Could not fetch user activities"});
+        console.error("An error occurred when processing the query: "+error);
+        return res.status(500).send({
+          type: error.name,
+          message: "Could not fetch user activities"});
       });
   }
 
@@ -186,10 +203,13 @@ export async function getCurrentEvent(req, res){
   .where("ep.id=:userId", {userId: req.params.userId})
   .getMany()
   .then(
-    response => res.status(200).send(response[0]), 
+    response => {
+      return res.status(200).send(response[0])}, 
     error => {
-      console.log("Error while fetching current event"+error)
-      res.status(500).send({message: "Could not fetch events"})});
+      console.error("Error while fetching current event"+error)
+      return res.status(500).send({
+        type: error.name,
+        message: "Could not fetch events"})});
 }
 
 export async function getUpdateNotifications(req, res) {
@@ -206,8 +226,8 @@ export async function getUpdateNotifications(req, res) {
         return res.status(200).send(logs);
       },
       error => {
-        console.log(error);
-        res.status(500).send({message: "Error while trying to fetch notifications"})
+        console.error("Error while fetching update logs:", error);
+        return res.status(500).send({message: "Error while trying to fetch notifications"})
       }
     )
 }
@@ -263,9 +283,9 @@ export async function firstUpdateNoImage(req, res) {
     if (error.response) {
       return res.status(error.response.status).send(error.response.data);
     } else if (error.request) {
-      return res.send(error.request);
+      return res.status(500).send(error.request);
     } else {
-      return res.send(error.message);
+      return res.status(500).send(error.message);
     }
   })
 }

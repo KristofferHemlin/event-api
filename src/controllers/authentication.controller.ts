@@ -21,7 +21,7 @@ export async function authenticateUser(req, res) {
 
   // If no user could be found.
   if(!theUser){
-    return res.status(401).send({
+    return res.status(404).send({
       message: 'There exists no user for the provided email.',
     })
   }
@@ -46,7 +46,7 @@ export async function authenticateUser(req, res) {
     expiresIn: '24h',
   });
 
-  res.json({
+  return res.json({
     message: 'Authentication successfull! Enjoy your stay!',
     token: token,
     user: theUser,
@@ -79,40 +79,44 @@ export async function signUpNewUser(req, res) {
 
   getRepository(User).save(user)
   .then(response => {
-    res.status(200).send(response);
+    return res.status(200).send(response);
   })
   .catch(error => {
-    console.log(error);
-    res.status(500).send({message: "Could not create new user"});
+    console.error("Error while creating user:", error);
+    return res.status(500).send({message: "Could not create new user"});
   })
 }
 
 export async function changeUserPassword(req, res) {
-  createQueryBuilder(User)
+  const user = await createQueryBuilder(User)
     .addSelect("User.password")
     .where("User.id=:userId", {userId: req.decoded.user_id})
-    .getOne()
-    .then(user => {
-      if (!user) {
-        return res.status(400).send({message: "The user account does not exist"});
-      }
-      let currentPwd = req.body.currentPassword;
-      bCrypt.compare(currentPwd, user.password)
-      .then( isMatch => {
-        if (!isMatch) {
-          return res.status(400).send({message: "The current password is wrong"});
-        }
-        const newPwd = req.body.newPassword;
-        if (!newPwd || newPwd === currentPwd) {
-          return res.status(400).send({message: "The new password is not valid"});
-        }
+    .getOne();
 
-        user.password = bCrypt.hashSync(newPwd, parseInt(process.env.SALT_ROUNDS, 10));
-        getRepository(User).save(user)
-        .then(_ => res.status(200).send({message: "Password changed"}))
-        .catch(_ => res.status(500).send({message: "The password could not be changed"}));
-      }, _ => res.status(400).send({message: "Cannot change password without current password"}))
-    });
+  if (!user) {
+    return res.status(404).send({message: "The user account does not exist"});
+  }
+
+  let currentPwd = req.body.currentPassword;
+  
+  bCrypt.compare(currentPwd, user.password)
+    .then( isMatch => {
+      if (!isMatch) {
+        return res.status(401).send({message: "The current password is wrong"});
+      }
+      const newPwd = req.body.newPassword;
+      if (!newPwd || newPwd === currentPwd) {
+        return res.status(400).send({message: "The new password is not valid"});
+      }
+
+      user.password = bCrypt.hashSync(newPwd, parseInt(process.env.SALT_ROUNDS, 10));
+      getRepository(User).save(user)
+      .then(_ => {return res.status(200).send({message: "Password changed"})})
+      .catch(error => {
+        console.error("Error while updating password:", error);
+        return res.status(500).send({message: "The password could not be changed"})});
+    }, 
+  _ => res.status(400).send({message: "Cannot change password without current password"}))
 }
 
 export async function sendResetPasswordEmail(req, res) {
@@ -140,22 +144,22 @@ export async function sendResetPasswordEmail(req, res) {
           
           mail.transporter.sendMail(emailTemplate, (err, info) => {
             if (err) {
-              console.log("Error while trying to send email: "+err);
+              console.error("Error while trying to send email: "+err);
               return res.status(500).send({message: "Error while sending email"})
             }
-            res.status(200).send({message: "Email sent"})
+            return res.status(200).send({message: "Email sent"})
           })
         })
         .catch(error => {
-          console.log("Error while updating user: ", error)
+          console.error("Error while updating user: ", error)
           return res.status(500).send({message: "Error while processing the request."})
         })
       } else {
-          res.status(400).send({message: "Email not registered"});
+          return res.status(400).send({message: "Email not registered"});
       }
   }, error => {return res.status(500).send({message: "Error while verifying user email"})})
   .catch(error => {
-    console.log("Error while sending email: ", error);
+    console.error("Error while sending email: ", error);
     return res.status(500).send({message: "Could not process the request. Email not sent."});
 });
 }
@@ -163,6 +167,7 @@ export async function sendResetPasswordEmail(req, res) {
 export async function redirectDeepLink(req, res) {
   const token = req.params.token
   res.redirect('evently://resetpassword/'+token);
+  return;
 }
 
 export async function resetPassword(req, res) {
@@ -181,7 +186,7 @@ export async function resetPassword(req, res) {
         user.resetPwdExpireAt = null;
         user.resetPwdToken = null;
         getRepository(User).save(user).then(
-          () => {}, error => console.log("Error while updating user: ", error))
+          () => {}, error => console.error("Error while updating user: ", error))
         return res.status(401).send({message: "Authentication token not valid"}) 
       } else {
         const newPassword = req.body.password;
@@ -196,16 +201,16 @@ export async function resetPassword(req, res) {
           user.resetPwdExpireAt = null;
           user.resetPwdToken = null;
           getRepository(User).save(user).then(
-            _ => res.status(200).send({message: "Password updated"}),
-            error => res.status(500).send({message: "Could not update password"}))
+            _ => {return res.status(200).send({message: "Password updated"})},
+            error => {return res.status(500).send({message: "Could not update password"})})
         })
       }
     }, error => {
-      console.log("Error when trying to fetch user: "+error)
-      res.status(500).send({message: "Could not fetch user"})})
+      console.error("Error when trying to fetch user: "+error)
+      return res.status(500).send({message: "Could not fetch user"})})
     .catch(error => {
-      console.log("Error while trying to update password"+error);
-      res.status(500).send({message: "Could not process request"});
+      console.error("Error while trying to update password"+error);
+      return res.status(500).send({message: "Could not process request"});
     })
 }
 

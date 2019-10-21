@@ -8,46 +8,57 @@ export async function createCompany(req, res) {
   let company = new Company();
   company.title = req.body.title;
 
-  await getRepository(Company).save(company)
+  getRepository(Company).save(company)
   .then(response => {
-    res.status(200).send(response);
+    return res.status(200).send(response);
   })
   .catch(error => {
-    res.status(500).send({message: "Error while trying to create company"});
+    console.error("Error while creating new company:", error);
+    return res.status(500).send({
+      type: error.name,
+      message: "Error while trying to create company"});
   })
 }
 
 export async function getAllCompanies(req, res) {
-  await getRepository(Company).find({relations: ['employees', 'events', 'activities'], order: {id: "ASC"}})
+  getRepository(Company).find({relations: ['employees', 'events', 'activities'], order: {id: "ASC"}})
   .then(response => {
-    res.status(200).send(response);
+    return res.status(200).send(response);
   })
   .catch(error => {
-    res.status(500).send({message: "Could not fetch companies"});
+    console.error("Error while fetching companies:", error)
+    return res.status(500).send({
+      type: error.name,
+      message: "Could not fetch companies"});
   })
 }
 
 export async function getCompanyById(req, res) {
-  await getRepository(Company).findOne({ id: req.params.companyId })
-  .then(response => {
-    res.status(200).send(response);
-  })
-  .catch(error => {
-    res.status(500).send({message: "Error while trying to fetch company"});
-  })
+  getRepository(Company).findOne({ id: req.params.companyId })
+    .then(response => {
+      return res.status(200).send(response);
+    })
+    .catch(error => {
+      console.error("Error while fetching company:", error);
+      return res.status(500).send({
+        type: error.name,
+        message: "Error while trying to fetch company"});
+    })
 }
 
 export async function updateCompany(req, res) {
-  let companyToUpdate = await getRepository(Company).findOne({ id: req.params.companyId });
+  const companyToUpdate = await getRepository(Company).findOne({ id: req.params.companyId });
 
   companyToUpdate.title = req.body.title;
 
-  await getRepository(Company).save(companyToUpdate)
+  getRepository(Company).save(companyToUpdate)
   .then(response => {
-    res.status(200).send(response);
+    return res.status(200).send(response);
   })
   .catch(error => {
-    res.status(500).send({message: "Error while trying to update company. Company not updated."});
+    return res.status(500).send({
+      type: error.name,
+      message: "Error while trying to update company. Company not updated."});
   })
 }
 
@@ -57,14 +68,14 @@ export async function removeUserFromCompany(req, res) {
 
   // Check if the company exists.
   if(!theCompany){
-    return res.status(400).send({
+    return res.status(404).send({
       message: 'No company with that id exists.'
     });
   }
 
   // Check if the user exists.
   if(!theUser){
-    return res.status(400).send({
+    return res.status(404).send({
       message: 'No user with that id exists.'
     });
   }
@@ -93,12 +104,12 @@ export async function removeUserFromCompany(req, res) {
 
 export async function deleteCompany(req, res){
   let company = await getRepository(Company).findOne({ id: req.params.companyId });
-  await getRepository(Company).remove(company)
+  getRepository(Company).remove(company)
   .then(response => {
-    res.status(204).send();
+    return res.status(204).send();
   })
   .catch(error => {
-    res.status(500).send({message: "Error while trying to delete company. Company not deleted."});
+    return res.status(500).send({message: "Error while trying to delete company. Company not deleted."});
   })
 }
 
@@ -114,9 +125,12 @@ export async function getAllEventsForCompany(req, res) {
     .orderBy("Event.id", "ASC")
     .getMany()
     .catch(error => {
-      res.status(500).send({message: "Error while trying to fetch company events."})
+      console.error("Error while fetching company events:", error)
+      return res.status(500).send({
+        type: error.name,
+        message: "Error while trying to fetch company events."})
     })
-  res.status(200).send(events)
+  return res.status(200).send(events)
 }
 
 export async function getAllUsersForCompany(req, res) {
@@ -127,8 +141,9 @@ export async function getAllUsersForCompany(req, res) {
   .orderBy("User.id", "ASC")
   .getMany()
   .catch(error => {
-    res.status(500).send({message: "Error while trying to fetch company users."})
+    console.error("Error while fetching company users:", error);
+    return res.status(500).send({message: "Error while trying to fetch company users."})
   })
 
-  res.status(200).send(users);
+  return res.status(200).send(users);
 }
