@@ -11,7 +11,6 @@ export default (req, res, next) => {
 
   const [_, token] = bearerToken.split(" "); 
 
-
   //If there is a token, try to decode the it.
   if(token){
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {

@@ -343,3 +343,26 @@ export async function firstUpdate(req, res){
       })
     })
   };
+
+  export async function logoutUser(req, res) {
+    // Removes refresh token
+    const userId = req.decoded.userId;
+    const user = await getRepository(User)
+      .findOne({ id: userId })
+      .catch(error => {
+        console.error("Error while fethcing user to logout");
+        res.status(500).send({
+          type: error.name,
+          message: "Error while trying to log out user."
+        })
+        return
+      });
+    if (!user) {
+      res.status(400).send({message: "The user does not exists."})
+      return
+    }
+    user.refreshToken = null;
+    getRepository(User).save(user).then(usr => {
+      res.status(204).send();
+    })
+  }

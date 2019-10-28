@@ -9,8 +9,6 @@ function setUpUserRoutes(app){
   //    isAuthenticated(req, res, next);
   //  })
 
-
-
   /**
   * @api {post} /user Create a new user profile
   * @apiName PostUser
@@ -229,6 +227,23 @@ function setUpUserRoutes(app){
   app.put('/users/:userId/firstlogin', (req, res) => {userController.firstUpdate(req, res)});
   app.put('/users/:userId/first-login-mobile', (req, res) => { userController.firstUpdateNoImage(req, res) });
   
+/**
+ * @api {post} /logout Logs out user.
+ * @apiDescription Invalidates the refresh token.
+ * @apiName Logout
+ * @apiGroup User
+ * @apiPermission Valid access token
+ * 
+ */
+  app.post('/logout', isAuthenticated, (req, res) => {
+    userController.logoutUser(req, res)
+      .catch(error => {
+        console.error("Error during /logout:", error)
+        res.status(500).send({
+          type: error.name, 
+          message: "Could not log out user."})
+    });
+  })
 }
 
 export default setUpUserRoutes;
