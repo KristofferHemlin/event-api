@@ -7,13 +7,16 @@ export default (req, res, next) => {
   }
 
   // Check for token.
-  const token = req.body.token || req.query.token || req.headers['x-access-token'] || req.headers.authorization;
+  const bearerToken =  req.headers.authorization; // Bearer {token}
+
+  const [_, token] = bearerToken.split(" "); 
+
 
   //If there is a token, try to decode the it.
   if(token){
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
       if(err){
-        return res.status(403).send(err)
+        return res.status(401).send({message: "Invalid access token."})
       } else {
         req.decoded = decoded
         next();

@@ -75,7 +75,7 @@ export async function getAllUsers(req, res) {
 }
 
 export async function getUserInfoForCurrentUser(req, res) {
-  await getRepository(User).findOne({ id: req.decoded.user_id }, {relations: ['company', 'activities', 'events']})
+  await getRepository(User).findOne({ id: req.decoded.userId }, {relations: ['company', 'activities', 'events']})
   .then(user => {
     if (user) {
       return res.status(200).send(user);

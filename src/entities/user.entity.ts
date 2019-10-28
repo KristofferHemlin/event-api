@@ -71,6 +71,9 @@ class User {
   @Column({select: false, nullable: true, type: "timestamp"})
   resetPwdExpireAt: Date;
 
+  @Column({select: false, nullable: true})
+  refreshToken: string
+
   @ManyToOne(type => Role, role => role.users, {cascade: true})
   role: Role;
 

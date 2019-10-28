@@ -25,6 +25,19 @@ function setUpAuthenticationRoutes(app){
   });
 
 
+  /**
+   * @api {post} /tokens/refresh Refresh access and refresh tokens
+   * @apiDescription Refreshes access token and updates refresh token.
+   * 
+   * @apiGroup Authentication
+   * 
+   * @apiParam {String} (body parameter) refreshToken User refresh token
+   * @apiParam {String} (body parameter) userId User unique id
+   */
+  app.post('/tokens/refresh', (req, res) => {
+    authenticationController.refreshToken(req, res);
+  })
+
 
   /**
   * @api {post} /sign-up-new-user Sign up a new user

@@ -11,7 +11,7 @@ import * as mail from '../modules/email';
 
 export async function authenticateUser(req, res) {
 
-  let theUser = await getRepository(User)
+  const theUser = await getRepository(User)
     .createQueryBuilder()
     .addSelect('User.password')
     .leftJoinAndSelect("User.company", "company")
@@ -26,34 +26,32 @@ export async function authenticateUser(req, res) {
     })
   }
 
-  // If the password is wrong.
-  console.time("compare time");
-
   bCrypt.compare(req.body.password, theUser.password).then(resp => {
+    // If the password is wrong.
     if (!resp) {
-      console.timeEnd("compare time");
       return res.status(401).send({
         message: 'The wrong password was provided.',
       })  
     } else {
-      // If valid credentials were provided,
-      console.timeEnd("compare time");
-      let payload = {
-        user_id: theUser.id,
-        company_id: theUser.company.id,
-        role: theUser.role
-      }
+      
+      const [accessToken, newRefreshToken] = generateTokens(theUser);
+      const refreshTokenHash = crypto.createHmac('sha256', process.env.REFRESH_SECRET).update(newRefreshToken).digest('hex');
+      theUser.refreshToken = refreshTokenHash;
 
-      theUser.password = undefined;
-
-      let token = jwt.sign(payload, process.env.JWT_SECRET, {
-        expiresIn: '24h',
-      });
-      return res.json({
-        message: 'Authentication successfull! Enjoy your stay!',
-        token: token,
-        user: theUser,
-      });
+      getRepository(User).save(theUser).then(user => {
+        const {password, refreshToken, resetPwdToken, resetPwdExpireAt, ...theUser} = user;
+        return res.json({
+          message: 'Authentication successfull! Enjoy your stay!',
+          accessToken: accessToken,
+          refreshToken: newRefreshToken,
+          user: theUser,
+        });
+      }).catch(error => {
+        console.error("Error while updating user token:", error);
+        return res.status(500).send({
+          type: error.name,
+          message: "Error while trying to authenticate user"})
+      })
     }
   }).catch(error => {
     console.error("Error while authenticating user:", error);
@@ -61,6 +59,86 @@ export async function authenticateUser(req, res) {
       type: error.name,
       message: "Error while trying to authenticate user."});
   });
+}
+
+export async function refreshToken(req, res) {
+  const refreshToken = req.body.refreshToken;
+  const userId = req.body.userId;
+
+  if (!refreshToken) {
+    res.status(400).send({message: "No refresh token provided."})
+    return
+  }
+
+  if (!userId) {
+    res.status(400).send({message: "No userId provided."})
+    return
+  }
+
+  jwt.verify(refreshToken, process.env.REFRESH_SECRET, (err, decoded) => {
+    if (err) {
+      res.status(401).send({message: "Refresh token not valid. Expired."})
+      return
+    } else {
+      if (parseInt(decoded.userId) !== parseInt(userId)) {
+        console.log(decoded.userId);
+        console.log(userId);
+        res.status(401).send({message: "Refresh token not valid. UserId no match."})
+        return
+      }
+      const refreshTokenHash = crypto.createHmac('sha256', process.env.REFRESH_SECRET).update(refreshToken).digest('hex');
+
+      createQueryBuilder(User)
+      .addSelect("User.refreshToken")
+      .innerJoinAndSelect("User.company", "company")
+      .innerJoinAndSelect("User.role", "role")
+      .where("User.id=:id and User.refreshToken=:refreshTokenHash", {id: userId, refreshTokenHash: refreshTokenHash})
+      .getOne()
+      .then(user => {
+        if (!user) {
+          res.status(401).send({message: "Refresh token not valid. No user has the provided token."})
+          return
+        }
+        const [accessToken, newRefreshToken] = generateTokens(user);
+        
+        const newRefreshTokenHash = crypto.createHmac('sha256', process.env.REFRESH_SECRET).update(newRefreshToken).digest('hex');
+        user.refreshToken = newRefreshTokenHash;
+        
+        getRepository(User).save(user).then( user => {
+          res.status(200).send({
+            accessToken: accessToken,
+            refreshToken: newRefreshToken
+          })
+          return
+        })  
+      })
+      .catch(error => {
+        console.error("Error while fetching user:", error);
+        res.status(500).send("Error while verifying request.");
+      })
+    }
+  })
+}
+
+// Helper functions to generate tokens
+
+function generateTokens(user: User){
+  // The user need to contain role and company
+  let payload = {
+    userId: user.id,
+    company_id: user.company.id,
+    role: user.role
+  }
+
+  const accessToken = jwt.sign(payload, process.env.JWT_SECRET, {
+    expiresIn: process.env.EXPIRETIME_AT,
+  });
+
+  const refreshToken = jwt.sign({userId: user.id}, process.env.REFRESH_SECRET, {
+    expiresIn: process.env.EXPIRETIME_RT,
+  });
+
+  return [accessToken, refreshToken]
 }
 
 export async function signUpNewUser(req, res) {
@@ -100,7 +178,7 @@ export async function signUpNewUser(req, res) {
 export async function changeUserPassword(req, res) {
   const user = await createQueryBuilder(User)
     .addSelect("User.password")
-    .where("User.id=:userId", {userId: req.decoded.user_id})
+    .where("User.id=:userId", {userId: req.decoded.userId})
     .getOne();
 
   if (!user) {
