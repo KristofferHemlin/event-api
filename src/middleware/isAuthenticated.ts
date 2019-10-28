@@ -2,10 +2,6 @@ import * as jwt from 'jsonwebtoken';
 
 export default (req, res, next) => {
 
-  if(req.method === 'OPTIONS'){
-    next();
-  }
-
   // Check for token.
   const bearerToken =  req.headers.authorization; // Bearer {token}
 
