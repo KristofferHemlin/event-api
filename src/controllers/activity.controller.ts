@@ -3,6 +3,7 @@ import Activity from '../entities/activity.entity';
 import Event from '../entities/event.entity';
 import User from '../entities/user.entity';
 import ActivityUpdateLog from '../entities/activitylog.entity';
+import {validateActivity} from '../modules/validation';
 
 export async function createActivity(req, res) {
   const eventId = req.body.eventId;
@@ -18,7 +19,16 @@ export async function createActivity(req, res) {
       message: 'No event could be found for the provided id. Activity not created.',
     })
   }
-  
+
+  const [inputValid, errorInfo] = validateActivity(req.body)
+
+  if (!inputValid) {
+    res.status(400).send({
+      message: "One or more fields are wrong.",
+      details: errorInfo})
+    return;
+  }
+
   const activity = new Activity();
   activity.title = req.body.title;
   activity.description = req.body.description;
@@ -30,18 +40,18 @@ export async function createActivity(req, res) {
   activity.goodToKnow = req.body.goodToKnow;
 
   getRepository(Activity).save(activity)
-  .then(activity => {
-    return res.status(201).send({ 
-        data: activity,
-        message: `Activity ${activity.title} created.`});
-  })
-  .catch(error => {
-    console.error("Error while trying to create an activity:", error);
-    return res.status(500).send({
-        type: error.name,
-        message: `Could not create the activity ${req.body.title}.`
-      })
-  })
+    .then(activity => {
+      return res.status(201).send({ 
+          data: activity,
+          message: `Activity ${activity.title} created.`});
+    })
+    .catch(error => {
+      console.error("Error while trying to create an activity:", error);
+      return res.status(500).send({
+          type: error.name,
+          message: `Could not create the activity ${req.body.title}.`
+        })
+    })
 }
 
 export async function getAllActivities(req, res) {
@@ -185,11 +195,20 @@ export async function updateActivity(req, res) {
     return res.status(404).send({message: "No activity found with provided id"});
   }
 
-  activity.title = req.body.title? req.body.title : activity.title;
-  activity.description = req.body.description? req.body.description : activity.description;
-  activity.startTime = req.body.startTime? req.body.startTime : activity.startTime;
-  activity.endTime = req.body.endTime? req.body.endTime : activity.endTime;
-  activity.location = req.body.location? req.body.location : activity.location;
+  const [inputValid, errorInfo] = validateActivity(req.body)
+
+  if (!inputValid) {
+    res.status(400).send({
+      message: "One or more fields are wrong.",
+      details: errorInfo})
+    return;
+  }
+
+  activity.title = req.body.title;
+  activity.description = req.body.description;
+  activity.startTime = req.body.startTime;
+  activity.endTime = req.body.endTime;
+  activity.location = req.body.location;
   activity.goodToKnow = req.body.goodToKnow;
   
   let activityLog = new ActivityUpdateLog();

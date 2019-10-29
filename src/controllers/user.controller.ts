@@ -10,6 +10,7 @@ import * as excelToJson from 'convert-excel-to-json';
 
 import * as multer from 'multer';
 import ActivityUpdateLog from '../entities/activitylog.entity';
+import { validateUser } from '..//modules/validation';
 
 // Multer file upload handling.
 const storage = multer.diskStorage({
@@ -43,6 +44,15 @@ var upload = multer({
 
 
 export async function createUser(req, res) {
+
+  const [inputValid, errorInfo] = validateUser(req.body);
+
+  if (!inputValid) {
+    res.status(400).send({
+      message: "One or more fields are wrong.",
+      details: errorInfo})
+    return;
+  }
 
   let user = new User();
   user.firstName = req.body.firstName;
@@ -116,10 +126,19 @@ export async function updateUser(req, res){
     return res.status(404).send({message: "No user exists for the provided id."})
   }
 
-  userToUpdate.firstName = req.body.firstName? req.body.firstName: userToUpdate.firstName;
-  userToUpdate.lastName = req.body.lastName? req.body.lastName: userToUpdate.lastName;
-  userToUpdate.phone = req.body.phone? req.body.phone: userToUpdate.phone;
-  userToUpdate.email = req.body.email? req.body.email: userToUpdate.email;
+  const [inputValid, errorInfo] = validateUser(req.body);
+
+  if (!inputValid) {
+    res.status(400).send({
+      message: "One or more fields are wrong.",
+      details: errorInfo})
+    return;
+  }
+
+  userToUpdate.firstName = req.body.firstName;
+  userToUpdate.lastName = req.body.lastName;
+  userToUpdate.phone = req.body.phone;
+  userToUpdate.email = req.body.email;
   userToUpdate.companyDepartment = req.body.companyDepartment;
   userToUpdate.aboutMe = req.body.aboutMe;
   userToUpdate.allergiesOrPreferences = req.body.allergiesOrPreferences;
@@ -266,12 +285,21 @@ export async function firstUpdateNoImage(req, res) {
     if (!newPwd) {
       return res.status(400).send({ message: "Need to specify a new password" });
     }
+
+    const [inputValid, errorInfo] = validateUser(req.body);
+
+    if (!inputValid) {
+      res.status(400).send({
+        message: "One or more fields are wrong.",
+        details: errorInfo})
+      return;
+    }
     
-    user.firstName = req.body.firstName ? req.body.firstName : user.firstName;
-    user.lastName = req.body.lastName ? req.body.lastName : user.lastName;
-    user.email = req.body.email ? req.body.email : user.email;
-    user.phone = req.body.phone ? req.body.phone : user.phone;
-    user.companyDepartment = req.body.companyDepartment ? req.body.companyDepartment : user.companyDepartment;
+    user.firstName = req.body.firstName;
+    user.lastName = req.body.lastName;
+    user.email = req.body.email;
+    user.phone = req.body.phone;
+    user.companyDepartment = req.body.companyDepartment;
     user.signupComplete = true;
     user.password = bCrypt.hashSync(req.body.password, parseInt(process.env.SALT_ROUNDS, 10));
     getRepository(User).save(user).then(response => {
@@ -318,12 +346,22 @@ export async function firstUpdate(req, res){
           removeFile(req.file.path)
           return res.status(400).send({ message: "Need to specify a new password" });
         }
+
+        const [inputValid, errorInfo] = validateUser(req.body);
+
+        if (!inputValid) {
+          res.status(400).send({
+            message: "One or more fields are wrong.",
+            details: errorInfo})
+          return;
+        }
+
         // user.profileImageUrl = req.file.filename;
-        user.firstName = req.body.firstName ? req.body.firstName : user.firstName;
-        user.lastName = req.body.lastName ? req.body.lastName : user.lastName;
-        user.email = req.body.email ? req.body.email : user.email;
-        user.phone = req.body.phone ? req.body.phone : user.phone;
-        user.companyDepartment = req.body.companyDepartment ? req.body.companyDepartment : user.companyDepartment;
+        user.firstName = req.body.firstName;
+        user.lastName = req.body.lastName;
+        user.email = req.body.email;
+        user.phone = req.body.phone;
+        user.companyDepartment = req.body.companyDepartment;
         user.signupComplete = true;
         user.password = bCrypt.hashSync(req.body.password, parseInt(process.env.SALT_ROUNDS, 10));
         getRepository(User).save(user).then(response => {

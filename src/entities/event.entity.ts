@@ -29,7 +29,7 @@ class Event {
   @Column()
   title: string;
 
-  @Column()
+  @Column({nullable: true})
   description: string;
 
   @Column({type: "timestamp"})

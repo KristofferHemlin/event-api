@@ -4,6 +4,8 @@ import Company from '../entities/company.entity';
 import User from '../entities/user.entity';
 import Activity from '../entities/activity.entity';
 
+import {validateEvent} from '../modules/validation';
+
 export async function createEvent(req, res) {
   let company = await getRepository(Company).findOne({ id: req.body.companyId },{relations: ['events']});
 
@@ -11,6 +13,15 @@ export async function createEvent(req, res) {
     return res.status(404).send({
       message: 'No company was found with the provided company id.',
     });
+  }
+
+  const [inputValid, errorInfo] = validateEvent(req.body);
+
+  if (!inputValid) {
+    res.status(400).send({
+      message: "One or more fields are wrong.",
+      details: errorInfo})
+    return;
   }
 
   const event = new Event();
@@ -24,7 +35,7 @@ export async function createEvent(req, res) {
 
   getRepository(Event).save(event)
   .then(event => {
-    return res.status(200).send(event)
+    return res.status(201).send(event)
   })
   .catch(error => {
     return res.status(500).send({
@@ -36,12 +47,21 @@ export async function createEvent(req, res) {
 export async function updateEvent(req, res){
   const event = await getRepository(Event).findOne({id: req.params.eventId });
 
+  const [inputValid, errorInfo] = validateEvent(req.body);
+
+  if (!inputValid) {
+    res.status(400).send({
+      message: "One or more fields are wrong.",
+      details: errorInfo})
+    return;
+  }
+
   if (event) {
-    event.title = req.body.title? req.body.title: event.title;
-    event.description = req.body.description? req.body.description: event.description;
-    event.startTime = req.body.startTime? req.body.startTime: event.startTime;
-    event.endTime = req.body.endTime? req.body.endTime: event.endTime;
-    event.location = req.body.location? req.body.location: event.location;
+    event.title = req.body.title;
+    event.description = req.body.description;
+    event.startTime = req.body.startTime;
+    event.endTime = req.body.endTime;
+    event.location = req.body.location;
     event.goodToKnow = req.body.goodToKnow;
   
     getRepository(Event).save(event)

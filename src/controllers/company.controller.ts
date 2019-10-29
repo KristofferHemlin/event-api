@@ -1,11 +1,22 @@
 import Company from '../entities/company.entity';
 import User from '../entities/user.entity';
 import Event from '../entities/event.entity';
+import {validateFields} from '../modules/validation';
 import {getRepository, createQueryBuilder, getTreeRepository} from "typeorm";
 
 export async function createCompany(req, res) {
 
   let company = new Company();
+
+  let [inputValid, errorInfo] = validateFields(req.body, ["title"]);
+
+  if (!inputValid) {
+    res.status(400).send({
+      message: "One or more fields are wrong.",
+      details: errorInfo})
+    return;
+  }
+
   company.title = req.body.title;
 
   getRepository(Company).save(company)
@@ -48,6 +59,15 @@ export async function getCompanyById(req, res) {
 
 export async function updateCompany(req, res) {
   const companyToUpdate = await getRepository(Company).findOne({ id: req.params.companyId });
+
+  let [inputValid, errorInfo] = validateFields(req.body, ["title"]);
+
+  if (!inputValid) {
+    res.status(400).send({
+      message: "One or more fields are wrong.",
+      details: errorInfo})
+    return;
+  }
 
   companyToUpdate.title = req.body.title;
 
