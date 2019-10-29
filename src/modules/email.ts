@@ -9,7 +9,7 @@ export const transporter = nodemailer.createTransport({
 });
 
 export const resetPasswordTemplate = (user, url) => {
-    const from = `'Kablaam' <${process.env.EMAIL_USER}>`;
+    const from = `'Zington Eventapp' <${process.env.EMAIL_USER}>`;
     const to = user.email;
     const subject = "Password reset";
     const html = resetPasswordHtml(user, url);
@@ -26,6 +26,6 @@ const resetPasswordHtml = (user, url) => {
             font-family:Arial,sans-serif;
             font-size:13px;">Reset password</a>
         <p style="font-family: Arial,sans-serif;
-        font-size: 12px;">Happy Kablaaming!</p>
+        font-size: 12px;">Ciao!</p>
         <p style="font-size: 10px;">P.S. If you did not request a password reset you do not need to do anything.</p>`   
 }
