@@ -4,11 +4,9 @@ export default (req, res, next) => {
 
   // Check for token.
   const bearerToken =  req.headers.authorization; // Bearer {token}
-
-  const [_, token] = bearerToken.split(" "); 
-
-  //If there is a token, try to decode the it.
-  if(token){
+  if (bearerToken){
+    const [_, token] = bearerToken.split(" "); 
+    //If there is a token, try to decode the it.
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
       if(err){
         return res.status(401).send({message: "Invalid access token."})
@@ -16,7 +14,6 @@ export default (req, res, next) => {
         req.decoded = decoded
         next();
       }
-
     })
   } else {
     return res.status(403).send({
