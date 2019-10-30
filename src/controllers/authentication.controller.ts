@@ -77,13 +77,11 @@ export async function refreshToken(req, res) {
 
   jwt.verify(refreshToken, process.env.REFRESH_SECRET, (err, decoded) => {
     if (err) {
-      res.status(401).send({message: "Refresh token not valid. Expired."})
+      res.status(403).send({message: "Refresh token not valid. Expired."})
       return
     } else {
       if (parseInt(decoded.userId) !== parseInt(userId)) {
-        console.log(decoded.userId);
-        console.log(userId);
-        res.status(401).send({message: "Refresh token not valid. UserId no match."})
+        res.status(403).send({message: "Refresh token not valid. UserId does not match."})
         return
       }
       const refreshTokenHash = crypto.createHmac('sha256', process.env.REFRESH_SECRET).update(refreshToken).digest('hex');
@@ -96,7 +94,7 @@ export async function refreshToken(req, res) {
       .getOne()
       .then(user => {
         if (!user) {
-          res.status(401).send({message: "Refresh token not valid. No user has the provided token."})
+          res.status(403).send({message: "Refresh token not valid. No user has the provided token."})
           return
         }
         const [accessToken, newRefreshToken] = generateTokens(user);
