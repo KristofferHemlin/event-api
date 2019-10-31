@@ -19,7 +19,7 @@ const storage = multer.diskStorage({
   },
   filename: function (req, file, cb) {
     let ext = file.originalname.split('.').pop().toLowerCase();
-    cb(null, 'profileImage' + '-' + req.params.userId + "." + ext)
+    cb(null, 'profileImage' + '-' + Date.now() + "." + ext)
   }
 })
 
@@ -32,7 +32,6 @@ var upload = multer({
     file: 1,
   },
   fileFilter: (req, file, cb) => {
-    console.log('checking the file');
     // if the file extension is in our accepted list
     if (accepted_extensions.some(ext => file.originalname.endsWith("." + ext))) {
       return cb(null, true);
@@ -105,7 +104,7 @@ export async function getUserInfoForCurrentUser(req, res) {
 }
 
 export async function getUserById(req, res) {
-  await getRepository(User).findOne({ id: req.params.userId }, { relations: ['company', 'activities', 'events'] })
+  getRepository(User).findOne({ id: req.params.userId }, { relations: ['company', 'activities', 'events'] })
   .then(user => {
       if (user) {
         if(user.profileImageUrl){
@@ -136,31 +135,62 @@ export async function updateUser(req, res) {
     return res.status(404).send({ message: "No user exists for the provided id." })
   }
 
-  const [inputValid, errorInfo] = validateUser(req.body);
+  upload(req, res, (err) => {
 
-  if (!inputValid) {
-    res.status(400).send({
-      message: "One or more fields are wrong.",
-      details: errorInfo})
-    return;
-  }
-
-  userToUpdate.firstName = req.body.firstName;
-  userToUpdate.lastName = req.body.lastName;
-  userToUpdate.phone = req.body.phone;
-  userToUpdate.email = req.body.email;
-  userToUpdate.companyDepartment = req.body.companyDepartment;
-  userToUpdate.aboutMe = req.body.aboutMe;
-  userToUpdate.allergiesOrPreferences = req.body.allergiesOrPreferences;
-
-  await getRepository(User).save(userToUpdate)
+    // Check for any faults with the image upload.
+    if (err) {
+      console.error("Error while processing form data:", err)
+      return res.status(500).send({
+        type: err.name,
+        message: "Error while processing form data",
+        error: err
+      });
+    }
+    const [inputValid, errorInfo] = validateUser(req.body);
+  
+    if (!inputValid) {
+      if (req.file) {
+        removeFile(req.file.path);
+      }
+      res.status(400).send({
+        message: "One or more fields are wrong.",
+        details: errorInfo})
+      return;
+    }
+  
+    userToUpdate.firstName = req.body.firstName;
+    userToUpdate.lastName = req.body.lastName;
+    userToUpdate.phone = req.body.phone;
+    userToUpdate.email = req.body.email;
+    userToUpdate.companyDepartment = req.body.companyDepartment;
+    userToUpdate.aboutMe = req.body.aboutMe;
+    userToUpdate.allergiesOrPreferences = req.body.allergiesOrPreferences;
+    
+    let oldFilePath;
+    if (userToUpdate.profileImageUrl){
+      oldFilePath = userToUpdate.profileImageUrl.split(":")[1];
+    } else {
+      oldFilePath = null
+    }
+    
+    if (req.file){
+      userToUpdate.profileImageUrl = req.file.mimetype+":"+req.file.path;
+    }
+    
+    getRepository(User).save(userToUpdate)
     .then(response => {
-      return res.status(200).send(response);
-    })
-    .catch(error => {
-      console.error("Error while updating user:", error);
-      return res.status(500).send({ message: "Could not update user." });
-    })
+        removeFile(oldFilePath);
+        return res.status(200).send(response);
+      })
+      .catch(error => {
+        if (req.file) {
+          removeFile(req.file.path);
+        }
+        console.error("Error while updating user:", error);
+        return res.status(500).send({ message: "Could not update user." });
+      })
+  })
+
 }
 
 export async function deleteUser(req, res) {
@@ -282,7 +312,8 @@ function removeDuplicates(array) {
 // Helper function for removing an image. 
 const removeFile = (path) => {
   if (path) {
-    fs.unlinkSync('./' + path);
+    let currentPath = process.cwd();
+    fs.unlinkSync(currentPath+"/"+ path);
   }
 };
 
@@ -351,6 +382,9 @@ export async function firstUpdate(req, res) {
     getRepository(User).findOne({ id: userId })
       .then(user => {
         if (user.signupComplete) {
+          if (req.file) {
+            removeFile(req.file.path);
+          }
           return res.status(403).send({ message: "The user has already signed up" });
         }
         const newPwd = req.body.password;
