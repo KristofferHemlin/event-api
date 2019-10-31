@@ -95,3 +95,27 @@ export function validateUser(user) {
     }
     return [isValid, errorMessage];
 }
+
+export function validatePassword(pwd:string, fieldName:string, oldPwd?:string){
+
+    let isValid = true;
+    let errorMessage = {}
+    
+    if (pwd) {
+        if (validator.isEmpty(pwd, {ignore_whitespace:true}) || pwd.length < 6) {
+            isValid = false;
+            errorMessage[fieldName] = "Need to be at least 6 characters"
+        }
+    } else {
+        isValid = false;
+        errorMessage[fieldName] = "Required"
+    }
+
+    if (oldPwd){
+        if (pwd === oldPwd) {
+            isValid = false;
+            errorMessage[fieldName] = "Cannot be the same as the current password"
+        }
+    }
+    return [isValid, errorMessage]
+}

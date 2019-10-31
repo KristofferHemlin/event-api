@@ -8,6 +8,7 @@ import User from '../entities/user.entity';
 import Role from '../entities/role.entity';
 
 import * as mail from '../modules/email';
+import { validatePassword } from '../modules/validation';
 
 export async function authenticateUser(req, res) {
 
@@ -174,6 +175,17 @@ export async function signUpNewUser(req, res) {
 }
 
 export async function changeUserPassword(req, res) {
+  let currentPwd = req.body.currentPassword;
+  const newPwd = req.body.newPassword;
+  
+  let [isValid, errorMessage] = validatePassword(newPwd, "newPassword", currentPwd);
+
+  if (!isValid) {
+    return res.status(400).send({
+      message: "The new password is not valid",
+      details: errorMessage})
+  }
+
   const user = await createQueryBuilder(User)
     .addSelect("User.password")
     .where("User.id=:userId", {userId: req.decoded.userId})
@@ -183,18 +195,11 @@ export async function changeUserPassword(req, res) {
     return res.status(404).send({message: "The user account does not exist"});
   }
 
-  let currentPwd = req.body.currentPassword;
-  
   bCrypt.compare(currentPwd, user.password)
     .then( isMatch => {
       if (!isMatch) {
         return res.status(401).send({message: "The current password is wrong"});
       }
-      const newPwd = req.body.newPassword;
-      if (!newPwd || newPwd === currentPwd) {
-        return res.status(400).send({message: "The new password is not valid"});
-      }
-
       user.password = bCrypt.hashSync(newPwd, parseInt(process.env.SALT_ROUNDS, 10));
       getRepository(User).save(user)
       .then(_ => {return res.status(200).send({message: "Password changed"})})

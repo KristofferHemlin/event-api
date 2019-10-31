@@ -10,7 +10,7 @@ import * as excelToJson from 'convert-excel-to-json';
 
 import * as multer from 'multer';
 import ActivityUpdateLog from '../entities/activitylog.entity';
-import { validateUser } from '..//modules/validation';
+import { validateUser, validatePassword } from '..//modules/validation';
 
 // Multer file upload handling.
 const storage = multer.diskStorage({
@@ -337,19 +337,17 @@ export async function firstUpdate(req, res){
     getRepository(User).findOne({ id: userId })
       .then(user => {
         if (user.signupComplete) {
-          removeFile(req.file.path)
+          // removeFile(req.file.path)
           return res.status(403).send({ message: "The user has already signed up" });
         }
         const newPwd = req.body.password;
+        const [pwdValid, errorMessagePwd] = validatePassword(newPwd, "password");
+        const [inputValid, errorMessageUser] = validateUser(req.body);
 
-        if (!newPwd) {
-          removeFile(req.file.path)
-          return res.status(400).send({ message: "Need to specify a new password" });
-        }
+        const errorInfo = Object.assign({}, errorMessagePwd, errorMessageUser);
 
-        const [inputValid, errorInfo] = validateUser(req.body);
-
-        if (!inputValid) {
+        if (!inputValid || !pwdValid) {
+          // removeFile(req.file.path)
           res.status(400).send({
             message: "One or more fields are wrong.",
             details: errorInfo})
