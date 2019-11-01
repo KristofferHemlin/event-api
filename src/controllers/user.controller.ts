@@ -18,6 +18,7 @@ import {
   ImageType, 
   handleMulterError,
   compressAndResize} from '../modules/fileHelpers';
+import {trimInput} from '../modules/helpers';
 
 // Get storage for multer
 const storage = getStorage("public/original", "profileImage")
@@ -116,7 +117,8 @@ export async function updateUser(req, res) {
       return res.status(400).send(errorMessage)
     }
 
-    const [inputValid, errorMessage, errorDetails] = validateUser(req.body);
+    let input = trimInput(req.body);
+    const [inputValid, errorMessage, errorDetails] = validateUser(input);
   
     if (!inputValid) {
       if (req.file) {
@@ -128,13 +130,13 @@ export async function updateUser(req, res) {
       return;
     }
     
-    userToUpdate.firstName = req.body.firstName;
-    userToUpdate.lastName = req.body.lastName;
-    userToUpdate.phone = req.body.phone;
-    userToUpdate.email = req.body.email;
-    userToUpdate.companyDepartment = req.body.companyDepartment;
-    userToUpdate.aboutMe = req.body.aboutMe === "null"? null: req.body.aboutMe; // Multer (probably) turns null values into string "null"
-    userToUpdate.allergiesOrPreferences = req.body.allergiesOrPreferences === "null"? null: req.body.allergiesOrPreferences;
+    userToUpdate.firstName = input.firstName;
+    userToUpdate.lastName = input.lastName;
+    userToUpdate.phone = input.phone;
+    userToUpdate.email = input.email;
+    userToUpdate.companyDepartment = input.companyDepartment;
+    userToUpdate.aboutMe = input.aboutMe === "null"? null: input.aboutMe; // Multer (probably) turns null values into string "null"
+    userToUpdate.allergiesOrPreferences = input.allergiesOrPreferences === "null"? null: input.allergiesOrPreferences;
     
     let oldFilePath: string;  // Save the old image path so it can be deleted if the update is successfull
 
@@ -325,6 +327,8 @@ export async function firstUpdate(req, res) {
           return res.status(403).send({ message: "The user has already signed up" });
         }
         const newPwd = req.body.password;
+        const input = trimInput(req.body);
+
         const [pwdValid, errorMessagePwd] = validatePassword(newPwd, "password");
         const [inputValid, errorMessageUser, errorDetailsUser] = validateUser(req.body);
 
