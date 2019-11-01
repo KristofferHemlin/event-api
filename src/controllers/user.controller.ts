@@ -163,8 +163,8 @@ export async function updateUser(req, res) {
     userToUpdate.phone = req.body.phone;
     userToUpdate.email = req.body.email;
     userToUpdate.companyDepartment = req.body.companyDepartment;
-    userToUpdate.aboutMe = req.body.aboutMe;
-    userToUpdate.allergiesOrPreferences = req.body.allergiesOrPreferences;
+    userToUpdate.aboutMe = req.body.aboutMe === "null"? null: req.body.aboutMe; // Multer (probably) turns null values into string "null"
+    userToUpdate.allergiesOrPreferences = req.body.allergiesOrPreferences === "null"? null: req.body.allergiesOrPreferences;
     
     let oldFilePath;  // Save the old image path so it can be deleted if the update is successfull
     if (userToUpdate.profileImageUrl){
