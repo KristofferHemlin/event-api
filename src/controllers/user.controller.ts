@@ -166,7 +166,7 @@ export async function updateUser(req, res) {
     userToUpdate.aboutMe = req.body.aboutMe;
     userToUpdate.allergiesOrPreferences = req.body.allergiesOrPreferences;
     
-    let oldFilePath;
+    let oldFilePath;  // Save the old image path so it can be deleted if the update is successfull
     if (userToUpdate.profileImageUrl){
       oldFilePath = userToUpdate.profileImageUrl.split(":")[1];
     } else {
@@ -179,7 +179,9 @@ export async function updateUser(req, res) {
     
     getRepository(User).save(userToUpdate)
     .then(response => {
+      if (req.file){  // Only remove old file if there is a new file
         removeFile(oldFilePath);
+      }
         return res.status(200).send(response);
       })
       .catch(error => {
@@ -312,8 +314,7 @@ function removeDuplicates(array) {
 // Helper function for removing an image. 
 const removeFile = (path) => {
   if (path) {
-    let currentPath = process.cwd();
-    fs.unlinkSync(currentPath+"/"+ path);
+    fs.unlinkSync(path);
   }
 };
 
