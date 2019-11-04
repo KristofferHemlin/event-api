@@ -9,12 +9,14 @@ import {
   OneToOne,
   JoinColumn,
   JoinTable,
+  OneToMany,
 } from 'typeorm';
 
 import Company from './company.entity';
 import Role from './role.entity';
 import Event from './event.entity';
 import Activity from './activity.entity';
+import PlayerId from './playerId.entity';
 
 @Entity()
 class User {
@@ -59,7 +61,7 @@ class User {
   @Column({ nullable: true })
   allergiesOrPreferences: string;
 
-  @Column()
+  @Column({select: false})
   isActive: boolean;
 
   @Column({ select: false })  
@@ -87,6 +89,9 @@ class User {
   @ManyToMany(type => Activity, activity => activity.participants)
   @JoinTable()
   activities: Activity[];
+
+  @OneToMany(type => PlayerId, playerId => playerId.user)
+  playerIds: PlayerId[];
 
 }
 

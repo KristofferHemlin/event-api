@@ -11,6 +11,7 @@ import * as excelToJson from 'convert-excel-to-json';
 import * as multer from 'multer';
 import ActivityUpdateLog from '../entities/activitylog.entity';
 import { validateUser, validatePassword } from '..//modules/validation';
+import PlayerId from '../entities/playerId.entity';
 
 // Multer file upload handling.
 const storage = multer.diskStorage({
@@ -113,7 +114,6 @@ export async function getUserById(req, res) {
           let imageString = fs.readFileSync(imagePath, encoding);
           user.profileImageUrl = "data:" + mimeType + ";"+encoding+"," + imageString;
         }
-        
         return res.status(200).send(user);
       } else {
         return res.status(404).send({ message: "No user exists for the provided id" });
@@ -484,4 +484,33 @@ export async function deleteProfileImage(req, res) {
     } else {
       res.status(204).send();
     }
+  } 
+
+export async function addPlayerId(req, res) {
+  const userId = req.params.userId;
+  const playerId = req.body.playerId;
+
+  if (!playerId) {
+    return res.status(400).send({message: "No playerId specified"});
+  }
+
+  const playerIdRecord = new PlayerId();
+  playerIdRecord.id = playerId;
+  playerIdRecord.user = userId;
+
+  const user = await getRepository(User).findOne({id: userId})
+
+  if (user) {
+    getRepository(PlayerId).save(playerIdRecord).then(record => {
+      return res.status(200).send(record);
+    }).catch(error => {
+      console.error("Error while saving playerId:", error);
+      return res.status(500).send({
+        type: error.name,
+        message: "Error while trying to register playerId for user."
+      })
+    });
+  } else {
+    return res.status(400).send({message: "No user exists with the provided id"});
+  }
 }

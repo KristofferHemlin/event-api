@@ -4,6 +4,8 @@ import Event from '../entities/event.entity';
 import User from '../entities/user.entity';
 import ActivityUpdateLog from '../entities/activitylog.entity';
 import {validateActivity} from '../modules/validation';
+import { invalid } from 'moment';
+import PlayerId from '../entities/playerId.entity';
 
 export async function createActivity(req, res) {
   const eventId = req.body.eventId;
@@ -225,18 +227,34 @@ export async function updateActivity(req, res) {
 
   // send push to all activity participants
   createQueryBuilder(User)
-    .innerJoin("User.activities", "au", "au.id=:activityId", {activityId: activityId})
+    .innerJoin("User.activities", "activities", "activities.id=:activityId", {activityId: activityId})
+    .innerJoinAndSelect("User.playerIds", "playerIds")
     .getMany()
     .then(users => {
-      const recipients = users.map(user => user.id.toString());
+      const recipients = [].concat(...users.map(user => {
+        return user.playerIds.map(playerId => {
+          return playerId.id;
+        })
+      }));
+      
       var pushMessage = { 
         app_id: process.env.ONESIGNAL_ID,
         headings: {"en": "Activity Updated", "sv": "Aktivitet uppdaterad"},
         contents: {"en": activity.title, "sv": activity.title},
         android_group: "activity_update",
-        include_external_user_ids: recipients
+        include_player_ids: recipients
       };
-      sendPush(pushMessage);
+      sendPush(pushMessage, (invalidIds) => {
+        invalidIds.map(id => {
+          createQueryBuilder(PlayerId)
+            .delete()
+            .where("player_id.id=:playerId", {playerId: id})
+            .execute()
+            .catch(error => {
+            console.error(`Error while removing playerId ${id}: `, error)
+            })
+        })
+      });
     })
     .catch(error => {
       console.error("Error while sending push notification:", error);
@@ -251,7 +269,16 @@ export async function updateActivity(req, res) {
   
 }
 
-function sendPush(data) {
+// TODO: remove playerIds from db that are not registered on onesignal (use one signal api call fetch all devices and compare)
+// function checkRecipients(recipientsSent: string[], numRecipientsReceived) {
+//   console.log(recipientsSent);
+//   if (recipientsSent.length > numRecipientsReceived) {
+//     console.log("need to remove stuff")
+//     // but that are not on oneSignal
+//   }
+// }
+
+function sendPush(data, onInvalidIds) {
   var https = require('https');
 
   var headers = {
@@ -267,13 +294,21 @@ function sendPush(data) {
   };
 
   var request = https.request(options, function(response) {  
-    response.on('data', function(data) {
-      const parsedData = JSON.parse(data.toString());
+    response.on('data', function(dataResponse) {
+      const parsedData = JSON.parse(dataResponse.toString());
+      //checkRecipients(data.include_player_ids, parsedData.recipients);
       if (parsedData.errors) {
-        console.error("Error: could not send push:")
-        console.error(parsedData);
+        // invalid_player_ids = playerIds (devices) that has unsubscribed from notifications.
+        const {invalid_player_ids, ...otherErrors} = parsedData.errors
+        if (invalid_player_ids) {
+          onInvalidIds(invalid_player_ids);
+        }
+        if (Object.keys(otherErrors).length > 0) {
+          console.error("Error when sending push:");
+          console.error(parsedData);
+        }
       }
-    });
+    })
   });
 
   request.on('error', function(e) {

@@ -246,6 +246,19 @@ function setUpUserRoutes(app){
   })
 
   app.delete('/users/:userId/profileimage', (req, res) => userController.deleteProfileImage(req, res))
+
+  
+  /**
+   * @api {post} /users/:userId/playerId
+   * @apiDescription Registers an OneSignal playerId for the user.
+   * @apiName Add OneSignal playerId
+   * @apiGroup User
+   * @apiPermission Valid access token
+   * 
+   * @apiParam {string} playerId for the user.
+   */
+  app.post('/users/:userId/playerids', (req, res) => userController.addPlayerId(req, res));
 }
+
 
 export default setUpUserRoutes;
