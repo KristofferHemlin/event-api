@@ -244,6 +244,8 @@ function setUpUserRoutes(app){
           message: "Could not log out user."})
     });
   })
+
+  app.delete('/users/:userId/profileimage', (req, res) => userController.deleteProfileImage(req, res))
 }
 
 export default setUpUserRoutes;

@@ -458,3 +458,30 @@ export async function firstUpdate(req, res) {
       res.status(204).send();
     })
 };
+
+export async function deleteProfileImage(req, res) {
+  const userId = req.params.userId;
+
+  const user = await getRepository(User).findOne({id: userId});
+
+  if (!user) {
+    res.status(400).send({message: "No user with the provided id"})
+  }
+
+  if (user.profileImageUrl){
+    const filePath = user.profileImageUrl.split(":")[1];
+    user.profileImageUrl = null;
+    getRepository(User).save(user).then(user => {
+      removeFile(filePath)
+      return res.status(204).send();
+    }).catch(error => {
+      console.error("Error while saving user with no image: ", error)
+      return res.status(500).send({
+        type: error.name,
+        message: "Error while trying to remove profile image"
+      })
+    })
+    } else {
+      res.status(204).send();
+    }
+}
