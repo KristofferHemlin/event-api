@@ -30,7 +30,7 @@ export async function authenticateUser(req, res) {
   bCrypt.compare(req.body.password, theUser.password).then(resp => {
     // If the password is wrong.
     if (!resp) {
-      return res.status(401).send({
+      return res.status(400).send({
         message: 'The wrong password was provided.',
       })  
     } else {
@@ -198,7 +198,7 @@ export async function changeUserPassword(req, res) {
   bCrypt.compare(currentPwd, user.password)
     .then( isMatch => {
       if (!isMatch) {
-        return res.status(401).send({message: "The current password is wrong"});
+        return res.status(400).send({message: "The current password is wrong"});
       }
       user.password = bCrypt.hashSync(newPwd, parseInt(process.env.SALT_ROUNDS, 10));
       getRepository(User).save(user)
@@ -272,13 +272,13 @@ export async function resetPassword(req, res) {
     .then(user => {
       const currentTime = new Date(Date.now());
       if (!user) {
-        return res.status(401).send({message: "Authentication token not valid"});
+        return res.status(400).send({message: "Authentication token not valid"});
       } else if (user.resetPwdExpireAt < currentTime) {
         user.resetPwdExpireAt = null;
         user.resetPwdToken = null;
         getRepository(User).save(user).then(
           () => {}, error => console.error("Error while updating user: ", error))
-        return res.status(401).send({message: "Authentication token not valid"}) 
+        return res.status(400).send({message: "Authentication token not valid"}) 
       } else {
         const newPassword = req.body.password;
         if (!newPassword) {
