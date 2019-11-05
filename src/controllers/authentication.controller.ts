@@ -140,6 +140,17 @@ function generateTokens(user: User){
   return [accessToken, refreshToken]
 }
 
+export function validateAccessToken(req, res) {
+  const accessToken = req.body.accessToken;
+  jwt.verify(accessToken, process.env.JWT_SECRET, (err, decoded) => {
+    if (err){
+      return res.status(400).send({message: "Access token not valid"});
+    } else {
+      return res.status(204).send();
+    }
+  })
+}
+
 export async function signUpNewUser(req, res) {
 
   // create a company.

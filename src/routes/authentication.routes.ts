@@ -38,6 +38,10 @@ function setUpAuthenticationRoutes(app){
     authenticationController.refreshToken(req, res);
   })
 
+  app.get('/tokens/validate', (req, res) => {
+    authenticationController.validateAccessToken(req, res);
+  })
+
 
   /**
   * @api {post} /sign-up-new-user Sign up a new user
