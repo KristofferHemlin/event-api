@@ -12,37 +12,39 @@ import * as multer from 'multer';
 import ActivityUpdateLog from '../entities/activitylog.entity';
 import { validateUser, validatePassword } from '..//modules/validation';
 import PlayerId from '../entities/playerId.entity';
+import { getStorage, uploadFile } from '../modules/fileHelpers';
 
 // Multer file upload handling.
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'public')
-  },
-  filename: function (req, file, cb) {
-    let ext = file.originalname.split('.').pop().toLowerCase();
-    cb(null, 'profileImage' + '-' + Date.now() + "." + ext)
-  }
-})
+// const storage = multer.diskStorage({
+//   destination: function (req, file, cb) {
+//     cb(null, 'public')
+//   },
+//   filename: function (req, file, cb) {
+//     let ext = file.originalname.split('.').pop().toLowerCase();
+//     cb(null, 'profileImage' + '-' + Date.now() + "." + ext)
+//   }
+// })
 
-const accepted_extensions = ['jpg', 'jpeg', 'png', 'heic', 'JPG', 'JPEG', 'PNG', 'HEIC'];
+// const accepted_extensions = ['jpg', 'jpeg', 'png', 'heic', 'JPG', 'JPEG', 'PNG', 'HEIC'];
 
-var upload = multer({
-  storage: storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024,
-    file: 1,
-  },
-  fileFilter: (req, file, cb) => {
-    // if the file extension is in our accepted list
-    if (accepted_extensions.some(ext => file.originalname.endsWith("." + ext))) {
-      return cb(null, true);
-    }
+// var upload = multer({
+//   storage: storage,
+//   limits: {
+//     fileSize: 5 * 1024 * 1024,
+//     file: 1,
+//   },
+//   fileFilter: (req, file, cb) => {
+//     // if the file extension is in our accepted list
+//     if (accepted_extensions.some(ext => file.originalname.endsWith("." + ext))) {
+//       return cb(null, true);
+//     }
 
-    // otherwise, return error
-    return cb({ message: 'Only ' + accepted_extensions.join(", ") + ' files are allowed!' })
-  }
-}).single('image')
+//     // otherwise, return error
+//     return cb({ message: 'Only ' + accepted_extensions.join(", ") + ' files are allowed!' })
+//   }
+// }).single('image')
 
+const storage = getStorage("public", "profleImage")
 
 export async function createUser(req, res) {
 
@@ -135,7 +137,7 @@ export async function updateUser(req, res) {
     return res.status(404).send({ message: "No user exists for the provided id." })
   }
 
-  upload(req, res, (err) => {
+  uploadFile(req, res, storage, (err) => {
 
     // Check for any faults with the image upload.
     if (err) {
