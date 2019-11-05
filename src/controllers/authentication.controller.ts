@@ -15,7 +15,6 @@ export async function authenticateUser(req, res) {
   const theUser = await getRepository(User)
     .createQueryBuilder()
     .addSelect('User.password')
-    .addSelect('User.signupComplete')
     .leftJoinAndSelect("User.company", "company")
     .leftJoinAndSelect("User.role", "role")
     .where("User.email = :email", { email: req.body.email })
