@@ -368,4 +368,31 @@ export async function removeUserFromEvent(req, res){
   })
 }
 
+export async function deleteCoverImage(req, res) {
+  const eventId = req.params.eventId;
+
+  const event = await getRepository(Event).findOne({id: eventId});
+
+  if (!event) {
+    res.status(400).send({message: "No event with the provided id"})
+  }
+
+  if (event.coverImageUrl){
+    const filePath = event.coverImageUrl.split(":")[1];
+    event.coverImageUrl = null;
+    getRepository(Event).save(event).then(event => {
+      removeFile(filePath)
+      return res.status(204).send();
+    }).catch(error => {
+      console.error("Error while saving event with no image: ", error)
+      return res.status(500).send({
+        type: error.name,
+        message: "Error while trying to remove cover image"
+      })
+    })
+    } else {
+      res.status(204).send();
+    }
+}
+
 

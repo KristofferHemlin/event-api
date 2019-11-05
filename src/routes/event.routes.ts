@@ -159,6 +159,10 @@ function setUpEventRoutes(app) {
     eventController.deleteEvent(req, res);
   })
 
+  app.delete('/events/:eventId/coverimage', (req, res) => {
+    eventController.deleteCoverImage(req, res)
+  })
+
 }
 
 export default setUpEventRoutes;

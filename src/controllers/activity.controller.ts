@@ -64,7 +64,7 @@ export async function createActivity(req, res) {
     activity.goodToKnow = req.body.goodToKnow;
 
     if (req.file) {
-      activity.coverImageUrl = req.file.path;
+      activity.coverImageUrl = req.file.mimetype+":"+req.file.path;
     }
   
     getRepository(Activity).save(activity)
@@ -152,7 +152,10 @@ export async function deleteActivity(req, res) {
 
   getRepository(Activity).remove(activity)
   .then(_ => {
-    removeFile(activity.coverImageUrl);
+    if (activity.coverImageUrl) {
+      const coverImageUrl = activity.coverImageUrl.split(":")[1];
+      removeFile(coverImageUrl);
+    }
     res.status(204).send()
   })
   .catch(error => {
@@ -258,9 +261,15 @@ export async function updateActivity(req, res) {
     activity.location = req.body.location;
     activity.goodToKnow = req.body.goodToKnow;
 
-    let oldFileUrl = activity.coverImageUrl;
+    let oldFileUrl;
+    if (activity.coverImageUrl) {
+      oldFileUrl = activity.coverImageUrl.split(":")[1];
+    } else {
+      oldFileUrl = null;
+    }
+
     if (req.file) {
-      activity.coverImageUrl = req.file.path;
+      activity.coverImageUrl = req.file.mimetype+":"+req.file.path;
     }
     
     let activityLog = new ActivityUpdateLog();
@@ -380,4 +389,35 @@ function sendPush(data, onInvalidIds) {
   request.write(JSON.stringify(data));
   request.end();
 
+}
+
+export async function deleteCoverImage(req, res) {
+  const activityId = req.params.activityId;
+
+  const activity = await getRepository(Activity).findOne({id: activityId});
+
+  if (!activity) {
+    res.status(400).send({message: "No activity with the provided id"})
+  }
+
+  
+  if (activity.coverImageUrl){
+    console.log("coverimage: ", activity.coverImageUrl);
+    const filePath = activity.coverImageUrl.split(":")[1];
+    console.log("filepath innan. ", filePath);
+    activity.coverImageUrl = null;
+    getRepository(Activity).save(activity).then(activity => {
+      console.log("filepath", filePath);
+      removeFile(filePath)
+      return res.status(204).send();
+    }).catch(error => {
+      console.error("Error while saving activity with no image: ", error)
+      return res.status(500).send({
+        type: error.name,
+        message: "Error while trying to remove cover image"
+      })
+    })
+    } else {
+      res.status(204).send();
+    }
 }

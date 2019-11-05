@@ -115,6 +115,9 @@ function setUpActivityRoutes(app) {
     activityController.updateActivity(req, res)
   })
 
+  app.delete('/activities/:activityId/coverimage', (req, res) => {
+    activityController.deleteCoverImage(req, res);
+  })
 
 }
 
