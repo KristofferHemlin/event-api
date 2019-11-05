@@ -318,53 +318,6 @@ const removeFile = (path) => {
   }
 };
 
-
-export async function firstUpdateNoImage(req, res) {
-  const userId = req.params.userId;
-
-  getRepository(User).findOne({ id: userId })
-    .then(user => {
-      if (user.signupComplete) {
-        return res.status(403).send({ message: "The user has already signed up" });
-      }
-    
-    const newPwd = req.body.password;
-    if (!newPwd) {
-      return res.status(400).send({ message: "Need to specify a new password" });
-    }
-
-    const [inputValid, errorInfo] = validateUser(req.body);
-
-    if (!inputValid) {
-      res.status(400).send({
-        message: "One or more fields are wrong.",
-        details: errorInfo})
-      return;
-    }
-    
-    user.firstName = req.body.firstName;
-    user.lastName = req.body.lastName;
-    user.email = req.body.email;
-    user.phone = req.body.phone;
-    user.companyDepartment = req.body.companyDepartment;
-    user.signupComplete = true;
-    user.password = bCrypt.hashSync(req.body.password, parseInt(process.env.SALT_ROUNDS, 10));
-    getRepository(User).save(user).then(response => {
-      response.password = undefined;
-      res.status(200).send(response);
-    });
-  })
-  .catch(error => {
-    if (error.response) {
-      return res.status(error.response.status).send(error.response.data);
-    } else if (error.request) {
-      return res.status(500).send(error.request);
-    } else {
-      return res.status(500).send(error.message);
-    }
-  })
-}
-
 export async function firstUpdate(req, res) {
   const userId = req.params.userId;
 

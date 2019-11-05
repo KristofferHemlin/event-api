@@ -225,7 +225,6 @@ function setUpUserRoutes(app){
   */
 
   app.put('/users/:userId/firstlogin', (req, res) => {userController.firstUpdate(req, res)});
-  app.put('/users/:userId/first-login-mobile', (req, res) => { userController.firstUpdateNoImage(req, res) });
   
 /**
  * @api {post} /logout Logs out user.
@@ -245,6 +244,15 @@ function setUpUserRoutes(app){
     });
   })
 
+  /**
+ * @api {delete} /users/:userid/profileimage Deletes profile image for user.
+ * @apiDescription Deletes the profile image for the user
+ * @apiName Delete profileImage
+ * @apiGroup User
+ * @apiPermission Valid access token
+ * 
+ * @apiParam {number} userId The unique identifier for the user.
+ */
   app.delete('/users/:userId/profileimage', (req, res) => userController.deleteProfileImage(req, res))
 
   
