@@ -5,9 +5,9 @@ import isAuthenticated from '../middleware/isAuthenticated';
 function setUpActivityRoutes(app) {
 
   // Middleware
-  // app.use('/activities', (req, res, next) => {
-  //   isAuthenticated(req, res, next);
-  // })
+  app.use('/activities', (req, res, next) => {
+    isAuthenticated(req, res, next);
+  })
 
   /**
   * @api {get} /activities Get all activities.

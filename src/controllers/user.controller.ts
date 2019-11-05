@@ -5,46 +5,15 @@ import Event from '../entities/event.entity';
 import { getRepository, getConnection, createQueryBuilder } from "typeorm";
 import { Request, Response } from 'express';
 import * as fs from 'fs';
-
 import * as excelToJson from 'convert-excel-to-json';
 
-import * as multer from 'multer';
 import ActivityUpdateLog from '../entities/activitylog.entity';
 import { validateUser, validatePassword } from '..//modules/validation';
 import PlayerId from '../entities/playerId.entity';
-import { getStorage, uploadFile } from '../modules/fileHelpers';
+import { getStorage, uploadFile, removeFile} from '../modules/fileHelpers';
 
-// Multer file upload handling.
-// const storage = multer.diskStorage({
-//   destination: function (req, file, cb) {
-//     cb(null, 'public')
-//   },
-//   filename: function (req, file, cb) {
-//     let ext = file.originalname.split('.').pop().toLowerCase();
-//     cb(null, 'profileImage' + '-' + Date.now() + "." + ext)
-//   }
-// })
-
-// const accepted_extensions = ['jpg', 'jpeg', 'png', 'heic', 'JPG', 'JPEG', 'PNG', 'HEIC'];
-
-// var upload = multer({
-//   storage: storage,
-//   limits: {
-//     fileSize: 5 * 1024 * 1024,
-//     file: 1,
-//   },
-//   fileFilter: (req, file, cb) => {
-//     // if the file extension is in our accepted list
-//     if (accepted_extensions.some(ext => file.originalname.endsWith("." + ext))) {
-//       return cb(null, true);
-//     }
-
-//     // otherwise, return error
-//     return cb({ message: 'Only ' + accepted_extensions.join(", ") + ' files are allowed!' })
-//   }
-// }).single('image')
-
-const storage = getStorage("public", "profleImage")
+// Get storage for multer
+const storage = getStorage("public", "profileImage")
 
 export async function createUser(req, res) {
 
@@ -137,8 +106,7 @@ export async function updateUser(req, res) {
     return res.status(404).send({ message: "No user exists for the provided id." })
   }
 
-  uploadFile(req, res, storage, (err) => {
-
+  uploadFile(storage, req, res, (err) => {
     // Check for any faults with the image upload.
     if (err) {
       console.error("Error while processing form data:", err)
@@ -313,18 +281,11 @@ function removeDuplicates(array) {
   return filteredArray;
 }
 
-// Helper function for removing an image. 
-const removeFile = (path) => {
-  if (path) {
-    fs.unlinkSync(path);
-  }
-};
-
 export async function firstUpdate(req, res) {
   const userId = req.params.userId;
 
   // Starts the upload of the user profile image.
-  upload(req, res, (err) => {
+  uploadFile(storage, req, res,  (err) => {
 
     // Check for any faults with the image upload.
     if (err) {

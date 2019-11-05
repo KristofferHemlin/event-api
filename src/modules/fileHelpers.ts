@@ -1,4 +1,5 @@
 import * as multer from 'multer';
+import * as fs from 'fs';
 
 const accepted_extensions = ['jpg', 'jpeg', 'png', 'heic', 'JPG', 'JPEG', 'PNG', 'HEIC'];
 
@@ -15,21 +16,27 @@ export function getStorage(folder: string, filePrefix:string) {
     return storage
 }
 
-export function uploadFile(req, res, storage, callback){
-    multer({
-        storage: storage,
-        limits: {
-          fileSize: 5 * 1024 * 1024,
-          file: 1,
-        },
-        fileFilter: (req, file, cb) => {
-          // if the file extension is in our accepted list
-          if (accepted_extensions.some(ext => file.originalname.endsWith("." + ext))) {
-            return cb(null, true);
-          }
-      
-          // otherwise, return error
-          return cb({ message: 'Only ' + accepted_extensions.join(", ") + ' files are allowed!' })
+export function uploadFile(storage, req, res, callback){
+  multer({
+      storage: storage,
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+        file: 1,
+      },
+      fileFilter: (req, file, cb) => {
+        // if the file extension is in our accepted list
+        if (accepted_extensions.some(ext => file.originalname.endsWith("." + ext))) {
+          return cb(null, true);
         }
-    }).single('image')
+    
+        // otherwise, return error
+        return cb({ message: 'Only ' + accepted_extensions.join(", ") + ' files are allowed!' })
+      }
+  }).single('image')(req, res, callback)
 }
+
+export function removeFile(path){
+  if (path) {
+    fs.unlinkSync(path);
+  }
+};

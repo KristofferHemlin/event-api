@@ -5,9 +5,9 @@ import isAuthenticated from '../middleware/isAuthenticated';
 function setUpCompanyRoutes(app){
 
   // Middleware
-  // app.use('/companies', (req, res, next) => {
-  //   isAuthenticated(req, res, next);
-  // })
+  app.use('/companies', (req, res, next) => {
+    isAuthenticated(req, res, next);
+  })
 
 
 

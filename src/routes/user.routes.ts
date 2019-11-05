@@ -5,9 +5,9 @@ import isAuthenticated from '../middleware/isAuthenticated';
 function setUpUserRoutes(app){
 
   // Middleware
-  //  app.use('/users', (req, res, next) => {
-  //    isAuthenticated(req, res, next);
-  //  })
+   app.use('/users', (req, res, next) => {
+     isAuthenticated(req, res, next);
+   })
 
   /**
   * @api {post} /user Create a new user profile

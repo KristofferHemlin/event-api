@@ -6,9 +6,9 @@ function setUpEventRoutes(app) {
 
 
   // Middleware
-  // app.use('/events', (req, res, next) => {
-  //   isAuthenticated(req, res, next);
-  // })
+  app.use('/events', (req, res, next) => {
+    isAuthenticated(req, res, next);
+  })
 
   /**
   * @api {post} /event Create a new event
