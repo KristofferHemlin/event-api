@@ -11,6 +11,15 @@ function setUpEventRoutes(app) {
   })
 
   /**
+   * @api {get} Fetch event by its id
+   * @apiName GetEventById
+   * @apiGroup Event
+   * 
+   * @apiParam {number} eventId Unique identifier for the parent company.
+   */
+  app.get('/events/:eventId', (req, res) => eventController.getEventById(req, res))
+
+  /**
   * @api {post} /event Create a new event
   * @apiPermission Admin & Company Manager
   * @apiName CreateEvents

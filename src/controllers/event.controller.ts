@@ -5,79 +5,149 @@ import User from '../entities/user.entity';
 import Activity from '../entities/activity.entity';
 
 import {validateEvent} from '../modules/validation';
+import { getStorage, uploadFile, removeFile } from "../modules/fileHelpers";
+
+const storage = getStorage("public", "eventImage");
 
 export async function createEvent(req, res) {
-  let company = await getRepository(Company).findOne({ id: req.body.companyId },{relations: ['events']});
+  
+  uploadFile(storage, req, res, async (err) => {
+    if (err) {
+      console.error("Error from multer: ", err)
+      return res.status(500).send({
+        type: err.name,
+        message: "Error while parsing form data"
+      })
+    }
 
-  if(!company){
-    return res.status(404).send({
-      message: 'No company was found with the provided company id.',
-    });
-  }
+    let company = await getRepository(Company).findOne({ id: req.body.companyId });
+  
+    if(!company){
+      if (req.file) {
+        removeFile(req.file.path);
+      }
+      return res.status(404).send({
+        message: 'No company was found with the provided company id.',
+      });
+    }
+  
+    const [inputValid, errorInfo] = validateEvent(req.body);
+  
+    if (!inputValid) {
+      if (req.file) {
+        removeFile(req.file.path)
+      }
+      res.status(400).send({
+        message: "One or more fields are wrong.",
+        details: errorInfo})
+      return;
+    }
+  
+    const event = new Event();
+    event.title = req.body.title;
+    event.description = req.body.description;
+    event.company = company;
+    event.startTime = req.body.startTime;
+    event.endTime = req.body.endTime;
+    event.location = req.body.location;
+    event.goodToKnow = req.body.goodToKnow;
 
-  const [inputValid, errorInfo] = validateEvent(req.body);
-
-  if (!inputValid) {
-    res.status(400).send({
-      message: "One or more fields are wrong.",
-      details: errorInfo})
-    return;
-  }
-
-  const event = new Event();
-  event.title = req.body.title;
-  event.description = req.body.description;
-  event.company = company;
-  event.startTime = req.body.startTime;
-  event.endTime = req.body.endTime;
-  event.location = req.body.location;
-  event.goodToKnow = req.body.goodToKnow;
-
-  getRepository(Event).save(event)
-  .then(event => {
-    return res.status(201).send(event)
+    if (req.file) {
+      event.coverImageUrl = req.file.mimetype+":"+req.file.path;
+    }
+  
+    getRepository(Event).save(event)
+    .then(event => {
+      return res.status(201).send(event);
+    })
+    .catch(error => {
+      if (req.file) {
+        removeFile(req.file.path);
+      }
+      return res.status(500).send({
+        type: error.name,
+        message: "Error while creating event. Event not created."});
+    })
   })
-  .catch(error => {
-    return res.status(500).send({
-      type: error.name,
-      message: "Error while creating event. Event not created."});
-  })
+}
+
+export async function getEventById(req, res) {
+  const eventId = req.params.eventId;
+  getRepository(Event)
+    .findOne({id: eventId})
+    .then(event => {
+      res.status(200).send(event)
+    }).catch(error => {
+      console.error("Error while fetching event: ", error)
+      res.status(500).send({
+        type: error.name,
+        message: "Could not fetch event"})
+    })
 }
 
 export async function updateEvent(req, res){
   const event = await getRepository(Event).findOne({id: req.params.eventId });
 
-  const [inputValid, errorInfo] = validateEvent(req.body);
-
-  if (!inputValid) {
-    res.status(400).send({
-      message: "One or more fields are wrong.",
-      details: errorInfo})
-    return;
+  if (!event) {
+    return res.status(400).send({message: "Specified event does not exit."})
   }
 
-  if (event) {
+  uploadFile(storage, req, res, (err) => {
+
+    if (err) {
+      console.error("Error from multer: ", err)
+      return res.status(500).send({
+        type: err.name,
+        message: "Error while uploading image"})
+    }
+
+    const [inputValid, errorInfo] = validateEvent(req.body);
+  
+    if (!inputValid) {
+      if (req.file) {
+        removeFile(req.file.path);
+      }
+      res.status(400).send({
+        message: "One or more fields are wrong.",
+        details: errorInfo})
+      return;
+    }
     event.title = req.body.title;
-    event.description = req.body.description;
+    event.description = req.body.description === "null"? null: req.body.description;
     event.startTime = req.body.startTime;
     event.endTime = req.body.endTime;
     event.location = req.body.location;
-    event.goodToKnow = req.body.goodToKnow;
-  
+    event.goodToKnow = req.body.goodToKnow === "null"? null: req.body.goodToKnow;
+    
+    let oldFilePath;
+    if (event.coverImageUrl) {
+      oldFilePath = event.coverImageUrl.split(":")[1];
+    } else {
+      oldFilePath = null;
+    }
+
+    if (req.file) {
+      event.coverImageUrl = req.file.mimetype+":"+req.file.path;
+    }
+
     getRepository(Event).save(event)
     .then(response => {
+      if (req.file) {
+        removeFile(oldFilePath);
+      }
       return res.status(200).send(response)
     })
     .catch(error => {
+      if (req.file) {
+        removeFile(req.file.path);
+      }
       console.error("Error while updating event:", error);
       return res.status(500).send({
         type: error.name,
         message: `Could not update event ${event.id}.`,
       })
     })
-  } else {
-    return res.status(404).send({message: "Specified event does not exit."})
-  }
+  })
 }
 
 export async function getAllEvents(req, res){
@@ -214,14 +284,24 @@ export async function deleteEvent(req, res){
     })
   }
 
+  let coverImage;
+  if (event.coverImageUrl) {
+    coverImage = event.coverImageUrl.split(":")[1];
+  } else {
+    coverImage = null;
+  }
+
   // Try to remove the activities first.
   getRepository(Activity).remove(event.activities)
   .then(response => {
+    //TODO: remove images for the activities.
       getRepository(Event).remove(event)
       .then(response2 => {
+        removeFile(coverImage);
         return res.status(204).send();
       })
       .catch(error2 => {
+        console.error("Error while removing event: ", error2);
         return res.status(500).send({
           message: "Could not remove event."
         })
