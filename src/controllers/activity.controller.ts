@@ -4,56 +4,87 @@ import Event from '../entities/event.entity';
 import User from '../entities/user.entity';
 import ActivityUpdateLog from '../entities/activitylog.entity';
 import {validateActivity} from '../modules/validation';
-import { invalid } from 'moment';
 import PlayerId from '../entities/playerId.entity';
+import { getStorage, uploadFile, removeFile } from '../modules/fileHelpers';
+
+const storage = getStorage("public", "activityImage")
 
 export async function createActivity(req, res) {
-  const eventId = req.body.eventId;
-  const event = await getRepository(Event)
-    .findOne({id: eventId}, {relations: ['company']})
-    .catch(error => {
-      console.error("Error while fetching event:", error);
-      return res.status(500).send({message: "Error while trying to create the activity."}); 
-    });
-
-  if(!event){
-    return res.status(400).send({
-      message: 'No event could be found for the provided id. Activity not created.',
-    })
-  }
-
-  const [inputValid, errorInfo] = validateActivity(req.body)
-
-  if (!inputValid) {
-    res.status(400).send({
-      message: "One or more fields are wrong.",
-      details: errorInfo})
-    return;
-  }
-
-  const activity = new Activity();
-  activity.title = req.body.title;
-  activity.description = req.body.description;
-  activity.event = event;
-  activity.company = event.company;
-  activity.startTime = req.body.startTime;
-  activity.endTime = req.body.endTime;
-  activity.location = req.body.location;
-  activity.goodToKnow = req.body.goodToKnow;
-
-  getRepository(Activity).save(activity)
-    .then(activity => {
-      return res.status(201).send({ 
-          data: activity,
-          message: `Activity ${activity.title} created.`});
-    })
-    .catch(error => {
-      console.error("Error while trying to create an activity:", error);
+  
+  uploadFile(storage, req, res, async (err) => {
+    
+    if (err) {
+      console.error("Error in multer: ", err);
       return res.status(500).send({
-          type: error.name,
-          message: `Could not create the activity ${req.body.title}.`
-        })
-    })
+        type: err.name,
+        message: "Could not parse form data"
+      })
+    }
+    
+    const eventId = req.body.eventId;
+    const event = await getRepository(Event)
+      .findOne({id: eventId}, {relations: ['company']})
+      .catch(error => {
+        if (req.file) {
+          removeFile(req.file.path);
+        }
+        console.error("Error while fetching event:", error);
+        return res.status(500).send({message: "Error while trying to create the activity."}); 
+      });
+  
+    if(!event){
+      if (req.file) {
+        removeFile(req.file.path);
+      }
+      return res.status(400).send({
+        message: 'No event could be found for the provided id. Activity not created.',
+      })
+    }
+  
+    const [inputValid, errorInfo] = validateActivity(req.body)
+  
+    if (!inputValid) {
+      if (req.file) {
+        removeFile(req.file.path);
+      }
+      res.status(400).send({
+        message: "One or more fields are wrong.",
+        details: errorInfo})
+      return;
+    }
+  
+    const activity = new Activity();
+    activity.title = req.body.title;
+    activity.description = req.body.description;
+    activity.event = event;
+    activity.company = event.company;
+    activity.startTime = req.body.startTime;
+    activity.endTime = req.body.endTime;
+    activity.location = req.body.location;
+    activity.goodToKnow = req.body.goodToKnow;
+
+    if (req.file) {
+      activity.coverImageUrl = req.file.path;
+    }
+  
+    getRepository(Activity).save(activity)
+      .then(activity => {
+        return res.status(201).send({ 
+            data: activity,
+            message: `Activity ${activity.title} created.`});
+      })
+      .catch(error => {
+        if (req.file) {
+          removeFile(req.file.path);
+        }
+        console.error("Error while trying to create an activity:", error);
+        return res.status(500).send({
+            type: error.name,
+            message: `Could not create the activity ${req.body.title}.`
+          })
+      })
+
+  })
 }
 
 export async function getAllActivities(req, res) {
@@ -121,6 +152,7 @@ export async function deleteActivity(req, res) {
 
   getRepository(Activity).remove(activity)
   .then(_ => {
+    removeFile(activity.coverImageUrl);
     res.status(204).send()
   })
   .catch(error => {
@@ -197,76 +229,105 @@ export async function updateActivity(req, res) {
     return res.status(404).send({message: "No activity found with provided id"});
   }
 
-  const [inputValid, errorInfo] = validateActivity(req.body)
+  uploadFile(storage, req, res, async (err) => {
 
-  if (!inputValid) {
-    res.status(400).send({
-      message: "One or more fields are wrong.",
-      details: errorInfo})
-    return;
-  }
+    if (err) {
+      console.error("Error in multer: ", err);
+      res.send(500).send({
+        type: err.name,
+        message: "Could not parse form data"
+      })
+    }
 
-  activity.title = req.body.title;
-  activity.description = req.body.description;
-  activity.startTime = req.body.startTime;
-  activity.endTime = req.body.endTime;
-  activity.location = req.body.location;
-  activity.goodToKnow = req.body.goodToKnow;
+    const [inputValid, errorInfo] = validateActivity(req.body);
   
-  let activityLog = new ActivityUpdateLog();
-  activityLog.activity = activity;
+    if (!inputValid) {
+      if (req.file) {
+        removeFile(req.file.path);
+      }
+      res.status(400).send({
+        message: "One or more fields are wrong.",
+        details: errorInfo})
+      return;
+    }
+  
+    activity.title = req.body.title;
+    activity.description = req.body.description;
+    activity.startTime = req.body.startTime;
+    activity.endTime = req.body.endTime;
+    activity.location = req.body.location;
+    activity.goodToKnow = req.body.goodToKnow;
 
-  const savedActivity = await getRepository(Activity)
-    .save(activity)
-    .catch(error => {
-      console.error("Error while trying to save activity:", error);
-      return res.status(500).send({
-        type: error.name,
-        message: "Could not update the activity"})
-    })
-
-  // send push to all activity participants
-  createQueryBuilder(User)
-    .innerJoin("User.activities", "activities", "activities.id=:activityId", {activityId: activityId})
-    .innerJoinAndSelect("User.playerIds", "playerIds")
-    .getMany()
-    .then(users => {
-      const recipients = [].concat(...users.map(user => {
-        return user.playerIds.map(playerId => {
-          return playerId.id;
-        })
-      }));
-      
-      var pushMessage = { 
-        app_id: process.env.ONESIGNAL_ID,
-        headings: {"en": "Activity Updated", "sv": "Aktivitet uppdaterad"},
-        contents: {"en": activity.title, "sv": activity.title},
-        android_group: "activity_update",
-        include_player_ids: recipients
-      };
-      sendPush(pushMessage, (invalidIds) => {
-        invalidIds.map(id => {
-          createQueryBuilder(PlayerId)
-            .delete()
-            .where("player_id.id=:playerId", {playerId: id})
-            .execute()
-            .catch(error => {
-            console.error(`Error while removing playerId ${id}: `, error)
-            })
-        })
+    let oldFileUrl = activity.coverImageUrl;
+    if (req.file) {
+      activity.coverImageUrl = req.file.path;
+    }
+    
+    let activityLog = new ActivityUpdateLog();
+    activityLog.activity = activity;
+  
+    const savedActivity = await getRepository(Activity)
+      .save(activity)
+      .catch(error => {
+        if (req.file) {
+          removeFile(req.file.path);
+        }
+        console.error("Error while trying to save activity:", error);
+        return res.status(500).send({
+          type: error.name,
+          message: "Could not update the activity"})
+      })
+    
+    if (savedActivity) {
+      if (req.file) {
+        removeFile(oldFileUrl);
+      }
+    }
+  
+    // send push to all activity participants
+    createQueryBuilder(User)
+      .innerJoin("User.activities", "activities", "activities.id=:activityId", {activityId: activityId})
+      .innerJoinAndSelect("User.playerIds", "playerIds")
+      .getMany()
+      .then(users => {
+        const recipients = [].concat(...users.map(user => {
+          return user.playerIds.map(playerId => {
+            return playerId.id;
+          })
+        }));
+        
+        var pushMessage = { 
+          app_id: process.env.ONESIGNAL_ID,
+          headings: {"en": "Activity Updated", "sv": "Aktivitet uppdaterad"},
+          contents: {"en": activity.title, "sv": activity.title},
+          android_group: "activity_update",
+          include_player_ids: recipients
+        };
+        sendPush(pushMessage, (invalidIds) => {
+          invalidIds.map(id => {
+            createQueryBuilder(PlayerId)
+              .delete()
+              .where("player_id.id=:playerId", {playerId: id})
+              .execute()
+              .catch(error => {
+              console.error(`Error while removing playerId ${id}: `, error)
+              })
+          })
+        });
+      })
+      .catch(error => {
+        console.error("Error while sending push notification:", error);
       });
-    })
-    .catch(error => {
-      console.error("Error while sending push notification:", error);
-    });
-
-  // Add activity update log
-  getRepository(ActivityUpdateLog).save(activityLog).then(
-    _ => {},
-    error => console.error("Could not log activity update for activity id: "+activityId, error));
-
-  return res.status(200).send(savedActivity);
   
+    // Add activity update log
+    getRepository(ActivityUpdateLog).save(activityLog).then(
+      _ => {},
+      error => console.error("Could not log activity update for activity id: "+activityId, error));
+  
+    return res.status(200).send(savedActivity);
+
+  })
+
 }
 
 // TODO: remove playerIds from db that are not registered on onesignal (use one signal api call fetch all devices and compare)

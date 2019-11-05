@@ -294,7 +294,8 @@ export async function deleteEvent(req, res){
   // Try to remove the activities first.
   getRepository(Activity).remove(event.activities)
   .then(response => {
-    //TODO: remove images for the activities.
+    event.activities.map(activity => {
+      removeFile(activity.coverImageUrl)});
       getRepository(Event).remove(event)
       .then(response2 => {
         removeFile(coverImage);
