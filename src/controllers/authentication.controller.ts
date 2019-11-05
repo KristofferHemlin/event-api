@@ -141,7 +141,9 @@ function generateTokens(user: User){
 }
 
 export function validateAccessToken(req, res) {
-  const accessToken = req.body.accessToken;
+  const bearerToken =  req.headers.authorization; // Bearer {token}
+  if (bearerToken){
+    const [_, accessToken] = bearerToken.split(" "); 
   jwt.verify(accessToken, process.env.JWT_SECRET, (err, decoded) => {
     if (err){
       return res.status(400).send({message: "Access token not valid"});
@@ -149,6 +151,9 @@ export function validateAccessToken(req, res) {
       return res.status(204).send();
     }
   })
+} else {
+  return res.status(400).send({message: "No access token provided."})
+}
 }
 
 export async function signUpNewUser(req, res) {

@@ -38,6 +38,12 @@ function setUpAuthenticationRoutes(app){
     authenticationController.refreshToken(req, res);
   })
 
+  /**
+   * @api {get} /tokens/validate Validate access token
+   * @apiDescription Validates current access token in auth header
+   * 
+   * @apiGroup Authentication
+   */ 
   app.get('/tokens/validate', (req, res) => {
     authenticationController.validateAccessToken(req, res);
   })
