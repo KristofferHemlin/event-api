@@ -146,7 +146,7 @@ export function validateAccessToken(req, res) {
     const [_, accessToken] = bearerToken.split(" "); 
   jwt.verify(accessToken, process.env.JWT_SECRET, (err, decoded) => {
     if (err){
-      return res.status(400).send({message: "Access token not valid"});
+      return res.status(401).send({message: "Access token not valid"});
     } else {
       return res.status(204).send();
     }
