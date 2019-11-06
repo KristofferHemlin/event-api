@@ -310,30 +310,31 @@ export async function updateActivity(req, res) {
       .innerJoinAndSelect("User.playerIds", "playerIds")
       .getMany()
       .then(users => {
-        const recipients = [].concat(...users.map(user => {
-          return user.playerIds.map(playerId => {
-            return playerId.id;
-          })
-        }));
-        
-        var pushMessage = { 
-          app_id: process.env.ONESIGNAL_ID,
-          headings: {"en": "Activity Updated", "sv": "Aktivitet uppdaterad"},
-          contents: {"en": activity.title, "sv": activity.title},
-          android_group: "activity_update",
-          include_player_ids: recipients
-        };
-        sendPush(pushMessage, (invalidIds) => {
-          invalidIds.map(id => {
-            createQueryBuilder(PlayerId)
-              .delete()
-              .where("player_id.id=:playerId", {playerId: id})
-              .execute()
-              .catch(error => {
-              console.error(`Error while removing playerId ${id}: `, error)
-              })
-          })
-        });
+        if (users.length > 0) {
+          const recipients = [].concat(...users.map(user => {
+            return user.playerIds.map(playerId => {
+              return playerId.id;
+            })
+          }));
+          var pushMessage = { 
+            app_id: process.env.ONESIGNAL_ID,
+            headings: {"en": "Activity Updated", "sv": "Aktivitet uppdaterad"},
+            contents: {"en": activity.title, "sv": activity.title},
+            android_group: "activity_update",
+            include_player_ids: recipients
+          };
+          sendPush(pushMessage, (invalidIds) => {
+            invalidIds.map(id => {
+              createQueryBuilder(PlayerId)
+                .delete()
+                .where("player_id.id=:playerId", {playerId: id})
+                .execute()
+                .catch(error => {
+                console.error(`Error while removing playerId ${id}: `, error)
+                })
+            })
+          });
+        }
       })
       .catch(error => {
         console.error("Error while sending push notification:", error);
