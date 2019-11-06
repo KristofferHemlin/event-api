@@ -9,6 +9,7 @@ import Role from '../entities/role.entity';
 
 import * as mail from '../modules/email';
 import { validatePassword } from '../modules/validation';
+import {processFormDataNoFile} from '../modules/fileHelpers';
 
 export async function authenticateUser(req, res) {
 
@@ -191,39 +192,50 @@ export async function signUpNewUser(req, res) {
 }
 
 export async function changeUserPassword(req, res) {
-  let currentPwd = req.body.currentPassword;
-  const newPwd = req.body.newPassword;
   
-  let [isValid, errorMessage] = validatePassword(newPwd, "newPassword", currentPwd);
+  processFormDataNoFile(req, res, async (err) => {
+    let currentPwd = req.body.currentPassword;
+    const newPwd = req.body.newPassword;
 
-  if (!isValid) {
-    return res.status(400).send({
-      message: "The new password is not valid",
-      details: errorMessage})
-  }
-
-  const user = await createQueryBuilder(User)
-    .addSelect("User.password")
-    .where("User.id=:userId", {userId: req.decoded.userId})
-    .getOne();
-
-  if (!user) {
-    return res.status(404).send({message: "The user account does not exist"});
-  }
-
-  bCrypt.compare(currentPwd, user.password)
-    .then( isMatch => {
-      if (!isMatch) {
-        return res.status(400).send({message: "The current password is wrong"});
-      }
-      user.password = bCrypt.hashSync(newPwd, parseInt(process.env.SALT_ROUNDS, 10));
-      getRepository(User).save(user)
-      .then(_ => {return res.status(200).send({message: "Password changed"})})
-      .catch(error => {
-        console.error("Error while updating password:", error);
-        return res.status(500).send({message: "The password could not be changed"})});
-    }, 
-  _ => res.status(400).send({message: "Cannot change password without current password"}))
+    if (err) {
+      console.error("Error in multer: ", err);
+      return res.status(500).send({
+        type: err.name,
+        message: "Error while processing form data."
+      });
+    }
+    
+    let [isValid, errorMessage] = validatePassword(newPwd, "newPassword", currentPwd);
+  
+    if (!isValid) {
+      return res.status(400).send({
+        message: "The new password is not valid",
+        details: errorMessage})
+    }
+  
+    const user = await createQueryBuilder(User)
+      .addSelect("User.password")
+      .where("User.id=:userId", {userId: req.decoded.userId})
+      .getOne();
+  
+    if (!user) {
+      return res.status(404).send({message: "The user account does not exist"});
+    }
+  
+    bCrypt.compare(currentPwd, user.password)
+      .then( isMatch => {
+        if (!isMatch) {
+          return res.status(400).send({message: "The current password is wrong"});
+        }
+        user.password = bCrypt.hashSync(newPwd, parseInt(process.env.SALT_ROUNDS, 10));
+        getRepository(User).save(user)
+        .then(_ => {return res.status(200).send({message: "Password changed"})})
+        .catch(error => {
+          console.error("Error while updating password:", error);
+          return res.status(500).send({message: "The password could not be changed"})});
+      }, 
+    _ => res.status(400).send({message: "Cannot change password without current password"}))
+  })
 }
 
 export async function sendResetPasswordEmail(req, res) {

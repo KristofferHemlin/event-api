@@ -35,6 +35,10 @@ export function uploadFile(storage, req, res, callback){
   }).single('image')(req, res, callback)
 }
 
+export function processFormDataNoFile(req, res, callback) {
+  multer().none()(req, res, callback);
+}
+
 export function removeFile(path){
   if (path) {
     fs.unlinkSync(path);
