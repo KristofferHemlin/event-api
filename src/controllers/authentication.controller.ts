@@ -209,8 +209,7 @@ export async function changeUserPassword(req, res) {
   
     if (!isValid) {
       return res.status(400).send({
-        message: "The new password is not valid",
-        details: errorMessage})
+        message: errorMessage})
     }
   
     const user = await createQueryBuilder(User)
