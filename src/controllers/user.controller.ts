@@ -215,11 +215,11 @@ export async function getUserEventActivities(req: Request, res: Response) {
     .getMany()
     .then(
       activities => {
-        const activitiesWithImages = activities.map((activity: Activity) => {
-          activity.coverImageUrl = getDataUrl(activity.coverImageUrl);
-          return activity;
-        })
-        return res.status(200).send(activitiesWithImages);
+        // const activitiesWithImages = activities.map((activity: Activity) => {
+        //   activity.coverImageUrl = getDataUrl(activity.coverImageUrl);
+        //   return activity;
+        // })
+        return res.status(200).send(activities);
       },
       error => {
         console.error("An error occurred when processing the query: " + error);

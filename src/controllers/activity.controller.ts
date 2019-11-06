@@ -90,11 +90,11 @@ export async function createActivity(req, res) {
 export async function getAllActivities(req, res) {
   getRepository(Activity).find({relations: ['participants', 'company'], order: {id: "ASC"}})
   .then(activities => {
-    const activitesWithImages = activities.map(activity => {
-      activity.coverImageUrl = getDataUrl(activity.coverImageUrl);
-      return activity;
-    })
-    return res.status(200).send(activitesWithImages);
+    // const activitesWithImages = activities.map(activity => {
+    //   activity.coverImageUrl = getDataUrl(activity.coverImageUrl);
+    //   return activity;
+    // })
+    return res.status(200).send(activities);
   })
   .catch(error => {
     return res.status(500).send({
@@ -141,11 +141,11 @@ export async function getActivityUsers(req, res) {
   .getMany()
   .then(
     participants => {
-      const participantsWithImages = participants.map(participant => {
-        participant.profileImageUrl = getDataUrl(participant.profileImageUrl);
-        return participant;
-      })
-      res.status(200).send(participantsWithImages)})
+      // const participantsWithImages = participants.map(participant => {
+      //   participant.profileImageUrl = getDataUrl(participant.profileImageUrl);
+      //   return participant;
+      // })
+      res.status(200).send(participants)})
   .catch(error => {
     console.error("Error while fetching users for activity "+error);
     res.status(500).send({message: "Could not fetch activity participants"})})

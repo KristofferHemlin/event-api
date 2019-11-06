@@ -154,11 +154,11 @@ export async function updateEvent(req, res){
 export async function getAllEvents(req, res){
   getRepository(Event).find({relations: ['participants', 'activities', 'company'], order: {id: "ASC"}})
   .then(events => {
-    const eventsWithImages = events.map(event => {
-      event.coverImageUrl = getDataUrl(event.coverImageUrl);
-      return event;
-    })
-    return res.status(200).send(eventsWithImages);
+    // const eventsWithImages = events.map(event => {
+    //   event.coverImageUrl = getDataUrl(event.coverImageUrl);
+    //   return event;
+    // })
+    return res.status(200).send(events);
   })
   .catch(error => {
     console.error("Error while fetching events:", error)
@@ -190,11 +190,11 @@ export async function getEventParticipants(req, res) {
     .getMany()
     .then(
       users => {
-        const usersWithImages = users.map(user => {
-          user.profileImageUrl = getDataUrl(user.profileImageUrl);
-          return user;
-        })
-        return res.status(200).send(usersWithImages)}, 
+        // const usersWithImages = users.map(user => {
+        //   user.profileImageUrl = getDataUrl(user.profileImageUrl);
+        //   return user;
+        // })
+        return res.status(200).send(users)}, 
       error => {
         console.error("Error while fetching event participants: "+error); 
         return res.status(500).send({
@@ -228,11 +228,11 @@ export async function getEventActivities(req, res) {
   .orderBy("Activity.id", "ASC")
   .getMany()
   .then(activities => {
-    const activitiesWithImage = activities.map(activity => {
-      activity.coverImageUrl = getDataUrl(activity.coverImageUrl);
-      return activity;
-    })
-    res.status(200).send(activitiesWithImage)},
+    // const activitiesWithImage = activities.map(activity => {
+    //   activity.coverImageUrl = getDataUrl(activity.coverImageUrl);
+    //   return activity;
+    // })
+    res.status(200).send(activities)},
     error => {
       console.error("Error while trying to fetch event activities: "+error);
       return res.status(500).send({message: "Could not fetch event activities"})}
