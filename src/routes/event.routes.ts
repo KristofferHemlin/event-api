@@ -17,7 +17,15 @@ function setUpEventRoutes(app) {
    * 
    * @apiParam {number} eventId Unique identifier for the parent company.
    */
-  app.get('/events/:eventId', (req, res) => eventController.getEventById(req, res))
+  app.get('/events/:eventId', (req, res) => {
+    eventController.getEventById(req, res).catch(error => {
+      console.error("Error in getEventById: ", error);
+      res.status(500).send({
+        type: error.name, 
+        message: "Error while fetching event"
+      })
+    })
+  })
 
   /**
   * @api {post} /event Create a new event
@@ -36,7 +44,13 @@ function setUpEventRoutes(app) {
 
   // Create a new event.
   app.post('/events', (req: express.Request, res: express.Response) => {
-    eventController.createEvent(req, res);
+    eventController.createEvent(req, res).catch(error => {
+      console.error("Error in creteEvent: ", error);
+      res.status(500).send({
+        type: error.name, 
+        message: "Error while creating event"
+      })
+    });
   });
 
 
@@ -59,7 +73,13 @@ function setUpEventRoutes(app) {
 
   // Update an event.
   app.put('/events/:eventId', (req: express.Request, res: express.Response) => {
-    eventController.updateEvent(req, res);
+    eventController.updateEvent(req, res).catch(error => {
+      console.error("Error in updateEvent: ", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Error while updating event"
+      })
+    });
   })
 
 
@@ -76,7 +96,13 @@ function setUpEventRoutes(app) {
 
   // Fetch all events.
   app.get('/events', (req: express.Request, res: express.Response) => {
-    eventController.getAllEvents(req, res);
+    eventController.getAllEvents(req, res).catch(error => {
+      console.error("Error in getAllEvents: ", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Error while fetching all events"
+      })
+    });
   });
 
   /**
@@ -88,7 +114,15 @@ function setUpEventRoutes(app) {
    */
 
   // Fetch all users on an event
-  app.get("/events/:eventId/users", eventController.getEventParticipants);
+  app.get("/events/:eventId/users", (req, res) => {
+    eventController.getEventParticipants(req, res).catch(error => {
+      console.error("Error in getEventParticipants: ", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Error while fetching event participants"
+      })
+    })
+  });
 
   /**
   * @api {get} /events/:eventId/users/:userId
@@ -99,7 +133,15 @@ function setUpEventRoutes(app) {
   * @apiParam {Number} userId Unique identifier for the event
   */
 
-  app.get("/events/:eventId/users/:userId", eventController.getEventParticipant);
+  app.get("/events/:eventId/users/:userId", (req, res) => {
+    eventController.getEventParticipant(req, res).catch(error => {
+      console.error("Error in getEventParticipant: ", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Error while fetching error participant"
+      })
+    })
+  });
 
 
   /**
@@ -111,7 +153,15 @@ function setUpEventRoutes(app) {
    * @apiParam {Number} eventId Unique identifier for the event.
    */
 
-   app.get("/events/:eventId/activities", eventController.getEventActivities);
+   app.get("/events/:eventId/activities", (req, res) => {
+     eventController.getEventActivities(req, res).catch(error => {
+       console.error("Error in getEventActivities: ", error)
+       res.status(500).send({
+         type: error.name,
+         message: "Error while fetching event activities"
+       })
+     })
+    });
 
   /**
   * @api {post} /event/add-user Add a user to an event
@@ -123,7 +173,13 @@ function setUpEventRoutes(app) {
 
   // Add a user to an Event.
   app.post('/events/add-user', (req: express.Request, res: express.Response) => {
-    eventController.addUserToEvent(req, res);
+    eventController.addUserToEvent(req, res).catch(error => {
+      console.error("Error in addUserToEvent: ", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Error while adding user to event"
+      })
+    });
   })
 
 
@@ -140,7 +196,13 @@ function setUpEventRoutes(app) {
 
   // Remove a user from an event.
   app.delete('/events/remove-user', (req: express.Request, res: express.Response) => {
-    eventController.removeUserFromEvent(req, res);
+    eventController.removeUserFromEvent(req, res).catch(error => {
+      console.error("Error in removeUserFromEvent: ", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Error while removing user from event"
+      })
+    });
   })
 
 
@@ -156,11 +218,23 @@ function setUpEventRoutes(app) {
 
   // Delete an event.
   app.delete('/events/:eventId', (req: express.Request, res: express.Response) => {
-    eventController.deleteEvent(req, res);
+    eventController.deleteEvent(req, res).catch(error => {
+      console.error("Error in deleteEvent: ", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Error while deleting event"
+      })
+    });
   })
 
   app.delete('/events/:eventId/coverimage', (req, res) => {
-    eventController.deleteCoverImage(req, res)
+    eventController.deleteCoverImage(req, res).catch(error => {
+      console.error("Error in deleteCoverImage: ", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Error while deleting cover image"
+      })
+    })
   })
 
 }

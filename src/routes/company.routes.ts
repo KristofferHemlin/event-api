@@ -21,7 +21,13 @@ function setUpCompanyRoutes(app){
 
   // Create a new company.
   app.post('/companies', (req: express.Request, res: express.Response) => {
-    companyController.createCompany(req, res);
+    companyController.createCompany(req, res).catch(error => {
+      console.error("Error in createCompany: ", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Could not create new company"
+      })
+    });
   });
 
 
@@ -35,7 +41,13 @@ function setUpCompanyRoutes(app){
 
   // Retrieve all companies.
   app.get('/companies', (req: express.Request, res: express.Response) => {
-    companyController.getAllCompanies(req, res);
+    companyController.getAllCompanies(req, res).catch(error => {
+      console.error("Error in getAllCompanies: ", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Error while fetching companies"
+      })
+    });
   });
 
 
@@ -56,7 +68,13 @@ function setUpCompanyRoutes(app){
 
   // Retrieve a single company with companyId
   app.get('/companies/:companyId', (req: express.Request, res: express.Response) => {
-    companyController.getCompanyById(req, res);
+    companyController.getCompanyById(req, res).catch(error =>  {
+      console.error("Error in getCompanyById: ", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Error while fetching company"
+      })
+    });
   });
 
 
@@ -73,7 +91,13 @@ function setUpCompanyRoutes(app){
 
   // Update a company with companyId
   app.put('/companies/:companyId', (req: express.Request, res: express.Response) => {
-    companyController.updateCompany(req, res);
+    companyController.updateCompany(req, res).catch(error => {
+      console.error("Error in updateCompany: ", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Error while updating company"
+      })
+    });
   });
 
 
@@ -89,7 +113,13 @@ function setUpCompanyRoutes(app){
 
   // Remove a user from a company
   app.delete('/companies/:companyId/remove-user', (req: express.Request, res: express.Response) => {
-    companyController.removeUserFromCompany(req, res);
+    companyController.removeUserFromCompany(req, res).catch(error => {
+      console.error("Error in removeUserFromCompany: ", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Error while removing user from company"
+      })
+    });
   });
 
 
@@ -105,7 +135,13 @@ function setUpCompanyRoutes(app){
 
   // Delete a company with companyId
   app.delete('/companies/:companyId', (req: express.Request, res: express.Response) => {
-    companyController.deleteCompany(req, res);
+    companyController.deleteCompany(req, res).catch(error => {
+      console.error("Error in deleteCompany: ", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Error while deleting company"
+      })
+    });
   });
 
 
@@ -118,14 +154,25 @@ function setUpCompanyRoutes(app){
   * @apiParam {Number} companyId The unique identifier of the company.
   */
 
-
   // Get all events for a company.
   app.get('/companies/:companyId/events', (req: express.Request, res: express.Response) => {
-    companyController.getAllEventsForCompany(req, res);
+    companyController.getAllEventsForCompany(req, res).catch(error => {
+      console.error("Error in getAllEventsForCompany: ", error);
+      res.status(500).send({
+        type: error.name, 
+        message: "Error while fetching company events"
+      })
+    });
   })
 
   app.get('/companies/:companyId/users',(req: express.Request, res: express.Response) => {
-    companyController.getAllUsersForCompany(req, res);
+    companyController.getAllUsersForCompany(req, res).catch(error => {
+      console.error("Error in getAllUsersForCompany: ", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Error while fetching company users"
+      })
+    });
   }) 
 
 

@@ -21,7 +21,13 @@ function setUpAuthenticationRoutes(app){
 
   // Authenticate user.
   app.post('/authenticate', (req: express.Request, res: express.Response) => {
-    authenticationController.authenticateUser(req, res);
+    authenticationController.authenticateUser(req, res).catch(error => {
+      console.error("Error in authenticateUser: ", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Could not authenticate user"
+      })
+    });
   });
 
 
@@ -35,7 +41,13 @@ function setUpAuthenticationRoutes(app){
    * @apiParam {String} (body parameter) userId User unique id
    */
   app.post('/tokens/refresh', (req, res) => {
-    authenticationController.refreshToken(req, res);
+    authenticationController.refreshToken(req, res).catch(error => {
+      console.error("Error in refeshToken: ", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Could not refresh token"
+      })
+    });
   })
 
   /**
@@ -45,7 +57,13 @@ function setUpAuthenticationRoutes(app){
    * @apiGroup Authentication
    */ 
   app.get('/tokens/validate', (req, res) => {
-    authenticationController.validateAccessToken(req, res);
+    authenticationController.validateAccessToken(req, res).catch(error => {
+      console.error("Error in validateAccessToken: ", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Could not validate access token"
+      })
+    });
   })
 
 
@@ -68,7 +86,13 @@ function setUpAuthenticationRoutes(app){
 
   // Sign up new user.
   app.post('/sign-up-new-user', (req: express.Request, res: express.Response) => {
-    authenticationController.signUpNewUser(req, res);
+    authenticationController.signUpNewUser(req, res).catch(error => {
+      console.error("Error in signUpNewUser: ", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Could not sign up new user"
+      })
+    });
   });
 
 
@@ -88,7 +112,13 @@ function setUpAuthenticationRoutes(app){
   app.put('/account/password', 
     isAuthenticated,
     (req, res) => {
-      authenticationController.changeUserPassword(req, res);
+      authenticationController.changeUserPassword(req, res).catch(error => {
+        console.error("Error in changeUserPassword: ", error);
+        res.status(500).send({
+          type: error.name,
+          message: "Error while changing user password"
+        })
+      });
     });
 
   
@@ -103,10 +133,22 @@ function setUpAuthenticationRoutes(app){
     * @apiParam {String} email The user email
     */  
 
-  app.post('/resetpassword', (req, res) => authenticationController.sendResetPasswordEmail(req, res))
+  app.post('/resetpassword', (req, res) => {
+    authenticationController.sendResetPasswordEmail(req, res).catch(error => {
+      console.error("Error in sendResetPasswordEmail: ", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Error while sending reset password email."
+      })
+    })
+  })
 
 
-  app.get('/deeplink/:token', (req, res) => authenticationController.redirectDeepLink(req, res))
+  app.get('/deeplink/:token', (req, res) => {
+    authenticationController.redirectDeepLink(req, res).catch(error => {
+      console.error("Error in redirectDeepLink: ", error); // Not sure where to redirect if this fails.
+    })
+  })
 
   /**
   * @api {post} /resetpassword/:token Reset password for user
@@ -119,7 +161,12 @@ function setUpAuthenticationRoutes(app){
   * @apiParam {String} token Token from reset password email
   * @apiParam {String} password New password
   */  
-  app.post('/resetpassword/:token', (req, res) => authenticationController.resetPassword(req, res))
+  app.post('/resetpassword/:token', (req, res) => {
+    authenticationController.resetPassword(req, res).catch(error => {
+      console.error("Error in resetPasswrd: ", error);
+      res.status(500).send("Error while trying to change password");
+    })
+  })
 }
 
 export default setUpAuthenticationRoutes;

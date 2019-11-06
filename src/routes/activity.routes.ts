@@ -16,7 +16,13 @@ function setUpActivityRoutes(app) {
   */
 
   app.get('/activities', (req: express.Request, res: express.Response) => {
-    activityController.getAllActivities(req, res);
+    activityController.getAllActivities(req, res).catch(error => {
+      console.error("Error in getAllActivities: ", error)
+      res.status(500).send({
+        type: error.name,
+        message: "Could not fetch activities"
+      })
+    });
   })
 
   /**
@@ -28,7 +34,13 @@ function setUpActivityRoutes(app) {
   */
 
  app.get('/activities/:activityId', (req: express.Request, res: express.Response) => {
-  activityController.getActivity(req, res);
+  activityController.getActivity(req, res).catch(error => {
+    console.error("Error in getActivity: ", error);
+    res.status(500).send({
+      type: error.name,
+      message: "Could not fetch activity"
+    })
+  });
 })
 
 /**
@@ -40,7 +52,13 @@ function setUpActivityRoutes(app) {
  */
 
  app.get('/activities/:activityId/users', (req: express.Request, res: express.Response) => {
-   activityController.getActivityUsers(req, res);
+   activityController.getActivityUsers(req, res).catch(error => {
+     console.error("Error in getActivityUsers: ", error);
+     res.status(500).send({
+       type: error.name,
+       message: "Could not fetch activity participants"
+     })
+   });
  })
 
 
@@ -61,7 +79,13 @@ function setUpActivityRoutes(app) {
   */
 
   app.post('/activities', (req: express.Request, res: express.Response) => {
-    activityController.createActivity(req, res);
+    activityController.createActivity(req, res).catch(error => {
+      console.error("Error in createActivity: ", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Could not create activity"
+      })
+    });
   })
 
 
@@ -77,7 +101,13 @@ function setUpActivityRoutes(app) {
   */
 
   app.post('/activities/:activityId/add-user', (req: express.Request, res: express.Response) => {
-    activityController.addUserToActivity(req, res);
+    activityController.addUserToActivity(req, res).catch(error => {
+      console.error("Error in addUserToActivity: ", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Could not add user to activity"
+      })
+    });
   })
 
   /**
@@ -90,7 +120,13 @@ function setUpActivityRoutes(app) {
   */
 
   app.delete('/activities/:activityId', (req: express.Request, res: express.Response) => {
-    activityController.deleteActivity(req, res);
+    activityController.deleteActivity(req, res).catch(error => {
+      console.error("Error in deleteActivity: ", error);
+      res.status(500).send({
+        type: error.name, 
+        message: "Could not delete activity"
+      })
+    });
   })
 
 
@@ -112,11 +148,32 @@ function setUpActivityRoutes(app) {
   */
 
   app.put('/activities/:activityId', (req: express.Request, res: express.Response) => {
-    activityController.updateActivity(req, res)
+    activityController.updateActivity(req, res).catch(error => {
+      console.error("Error in updateActivity: ", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Could not update activity"
+      })
+    })
   })
 
+  /**
+   * @api {delete} /activities/:activityId/coverimage Delete cover image for the activity
+   * @apiName DeleteActivityImage
+   * @apiDescription Delete the activity cover image
+   * @apiGroup Activity
+   * 
+   * @apiParam {Number} activityId The unique identifier of the activity.
+   */
+
   app.delete('/activities/:activityId/coverimage', (req, res) => {
-    activityController.deleteCoverImage(req, res);
+    activityController.deleteCoverImage(req, res).catch(error => {
+      console.error("Error in deleteCoverImage: ", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Could not delete cover image"
+      })
+    });
   })
 
 }
