@@ -5,7 +5,7 @@ import User from '../entities/user.entity';
 import ActivityUpdateLog from '../entities/activitylog.entity';
 import {validateActivity} from '../modules/validation';
 import PlayerId from '../entities/playerId.entity';
-import { getStorage, uploadFile, removeFile } from '../modules/fileHelpers';
+import { getStorage, uploadFile, removeFile, getDataUrl } from '../modules/fileHelpers';
 
 const storage = getStorage("public", "activityImage")
 
@@ -90,7 +90,11 @@ export async function createActivity(req, res) {
 export async function getAllActivities(req, res) {
   getRepository(Activity).find({relations: ['participants', 'company'], order: {id: "ASC"}})
   .then(activities => {
-    return res.status(200).send(activities);
+    const activitesWithImages = activities.map(activity => {
+      activity.coverImageUrl = getDataUrl(activity.coverImageUrl);
+      return activity;
+    })
+    return res.status(200).send(activitesWithImages);
   })
   .catch(error => {
     return res.status(500).send({
@@ -103,7 +107,9 @@ export async function getAllActivities(req, res) {
 export async function getActivity(req, res) {
   getRepository(Activity).findOne({id: req.params.activityId})
     .then(
-      activity => {return res.status(200).send(activity)})
+      activity => {
+        activity.coverImageUrl = getDataUrl(activity.coverImageUrl);
+        return res.status(200).send(activity)})
     .catch(error => {
       console.error("Error while fetching activity:", error);
       return res.status(500).send({
@@ -134,7 +140,12 @@ export async function getActivityUsers(req, res) {
   .orderBy(`User.${column}`, order.toUpperCase())
   .getMany()
   .then(
-    participants => res.status(200).send(participants))
+    participants => {
+      const participantsWithImages = participants.map(participant => {
+        participant.profileImageUrl = getDataUrl(participant.profileImageUrl);
+        return participant;
+      })
+      res.status(200).send(participantsWithImages)})
   .catch(error => {
     console.error("Error while fetching users for activity "+error);
     res.status(500).send({message: "Could not fetch activity participants"})})

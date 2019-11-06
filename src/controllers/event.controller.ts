@@ -5,7 +5,7 @@ import User from '../entities/user.entity';
 import Activity from '../entities/activity.entity';
 
 import {validateEvent} from '../modules/validation';
-import { getStorage, uploadFile, removeFile } from "../modules/fileHelpers";
+import { getStorage, uploadFile, removeFile, getDataUrl } from "../modules/fileHelpers";
 
 const storage = getStorage("public", "eventImage");
 
@@ -76,6 +76,7 @@ export async function getEventById(req, res) {
   getRepository(Event)
     .findOne({id: eventId})
     .then(event => {
+      event.coverImageUrl = getDataUrl(event.coverImageUrl);
       res.status(200).send(event)
     }).catch(error => {
       console.error("Error while fetching event: ", error)
@@ -153,7 +154,11 @@ export async function updateEvent(req, res){
 export async function getAllEvents(req, res){
   getRepository(Event).find({relations: ['participants', 'activities', 'company'], order: {id: "ASC"}})
   .then(events => {
-    return res.status(200).send(events);
+    const eventsWithImages = events.map(event => {
+      event.coverImageUrl = getDataUrl(event.coverImageUrl);
+      return event;
+    })
+    return res.status(200).send(eventsWithImages);
   })
   .catch(error => {
     console.error("Error while fetching events:", error)
@@ -184,7 +189,12 @@ export async function getEventParticipants(req, res) {
     .orderBy(`User.${column}`, order.toUpperCase())
     .getMany()
     .then(
-      response => {return res.status(200).send(response)}, 
+      users => {
+        const usersWithImages = users.map(user => {
+          user.profileImageUrl = getDataUrl(user.profileImageUrl);
+          return user;
+        })
+        return res.status(200).send(usersWithImages)}, 
       error => {
         console.error("Error while fetching event participants: "+error); 
         return res.status(500).send({
@@ -201,6 +211,7 @@ export async function getEventParticipant(req, res) {
   .andWhere("User.id = :userId",   { userId: req.params.userId })
   .getOne()
   .then(user => {
+    user.profileImageUrl = getDataUrl(user.profileImageUrl);
     return res.status(200).send(user);
   })
   .catch(error => {
@@ -211,15 +222,17 @@ export async function getEventParticipant(req, res) {
   })
 };
 
-
-
 export async function getEventActivities(req, res) {
   createQueryBuilder(Activity)
   .where("Activity.event =:eventId", {eventId: req.params.eventId})
   .orderBy("Activity.id", "ASC")
   .getMany()
-  .then(
-    activities => res.status(200).send(activities),
+  .then(activities => {
+    const activitiesWithImage = activities.map(activity => {
+      activity.coverImageUrl = getDataUrl(activity.coverImageUrl);
+      return activity;
+    })
+    res.status(200).send(activitiesWithImage)},
     error => {
       console.error("Error while trying to fetch event activities: "+error);
       return res.status(500).send({message: "Could not fetch event activities"})}

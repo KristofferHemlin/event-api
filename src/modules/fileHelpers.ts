@@ -40,3 +40,13 @@ export function removeFile(path){
     fs.unlinkSync(path);
   }
 };
+
+export function getDataUrl(imageUrl) {
+  if(imageUrl){
+    let encoding = 'base64';
+    let [mimeType, imagePath] = imageUrl.split(':');
+    let imageString = fs.readFileSync(imagePath, encoding);
+    return "data:" + mimeType + ";"+encoding+"," + imageString;
+  }
+  return imageUrl;
+}

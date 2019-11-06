@@ -10,7 +10,8 @@ import * as excelToJson from 'convert-excel-to-json';
 import ActivityUpdateLog from '../entities/activitylog.entity';
 import { validateUser, validatePassword } from '..//modules/validation';
 import PlayerId from '../entities/playerId.entity';
-import { getStorage, uploadFile, removeFile} from '../modules/fileHelpers';
+import { getStorage, uploadFile, removeFile, getDataUrl} from '../modules/fileHelpers';
+import Activity from '../entities/activity.entity';
 
 // Get storage for multer
 const storage = getStorage("public", "profileImage")
@@ -79,12 +80,7 @@ export async function getUserById(req, res) {
   getRepository(User).findOne({ id: req.params.userId }, { relations: ['company', 'activities', 'events'] })
   .then(user => {
       if (user) {
-        if(user.profileImageUrl){
-          let encoding = 'base64';
-          let [mimeType, imagePath] = user.profileImageUrl.split(':');
-          let imageString = fs.readFileSync(imagePath, encoding);
-          user.profileImageUrl = "data:" + mimeType + ";"+encoding+"," + imageString;
-        }
+        user.profileImageUrl = getDataUrl(user.profileImageUrl);
         return res.status(200).send(user);
       } else {
         return res.status(404).send({ message: "No user exists for the provided id" });
@@ -218,8 +214,12 @@ export async function getUserEventActivities(req: Request, res: Response) {
     .orderBy("activity.id", "ASC")
     .getMany()
     .then(
-      result => {
-        return res.status(200).send(result);
+      activities => {
+        const activitiesWithImages = activities.map((activity: Activity) => {
+          activity.coverImageUrl = getDataUrl(activity.coverImageUrl);
+          return activity;
+        })
+        return res.status(200).send(activitiesWithImages);
       },
       error => {
         console.error("An error occurred when processing the query: " + error);
@@ -236,8 +236,10 @@ export async function getCurrentEvent(req, res) {
     .where("ep.id=:userId", { userId: req.params.userId })
     .getMany()
     .then(
-      response => {
-        return res.status(200).send(response[0])
+      events => {
+        const currentEvent = events[0];
+        currentEvent.coverImageUrl = getDataUrl(currentEvent.coverImageUrl);
+        return res.status(200).send(currentEvent);
       },
       error => {
         console.error("Error while fetching current event" + error)
