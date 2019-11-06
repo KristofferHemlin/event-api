@@ -51,13 +51,13 @@ class Activity {
   @OneToMany(type => ActivityUpdateLog, activityLog => activityLog.activity)
   updateLogs: ActivityUpdateLog[]
 
-  @ManyToOne(type => Event, event => event.activities)
+  @ManyToOne(type => Event, event => event.activities, {nullable: false})
   event: Event;
 
   @ManyToMany(type => User, user => user.activities)
   participants: User[];
 
-  @ManyToOne(type => Company, company => company.activities, {cascade: true})
+  @ManyToOne(type => Company, company => company.activities, {cascade: true, nullable: false})
   company: Company;
 }
 

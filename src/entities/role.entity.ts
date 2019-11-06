@@ -16,7 +16,7 @@ class Role {
   @Column()
   role: string;
 
-  @OneToMany(type => User, user => user.company)
+  @OneToMany(type => User, user => user.role)
   users: User[];
 
 };

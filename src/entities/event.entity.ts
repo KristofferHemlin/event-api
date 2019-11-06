@@ -47,7 +47,7 @@ class Event {
   @Column({nullable: true})
   coverImageUrl: string;
 
-  @ManyToOne(type => Company, company => company.events)
+  @ManyToOne(type => Company, company => company.events, {nullable: false})
   company: Company;
 
   @ManyToMany(type => User, user => user.events)

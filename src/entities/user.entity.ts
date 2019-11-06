@@ -76,10 +76,10 @@ class User {
   @Column({select: false, nullable: true})
   refreshToken: string
 
-  @ManyToOne(type => Role, role => role.users, {cascade: true})
+  @ManyToOne(type => Role, role => role.users, {cascade: true, nullable: false})
   role: Role;
 
-  @ManyToOne(type => Company, company => company.employees, {cascade: true})
+  @ManyToOne(type => Company, company => company.employees, {cascade: true, nullable: false})
   company: Company;
 
   @ManyToMany(type => Event, event => event.participants, {cascade: true})

@@ -14,7 +14,7 @@ class ActivityUpdateLog {
     @CreateDateColumn({type: "timestamp"})
     createdAt: Date
 
-    @ManyToOne(type => Activity, activity => activity.updateLogs, {cascade: true})
+    @ManyToOne(type => Activity, activity => activity.updateLogs, {cascade: true, nullable: false})
     activity: Activity
 }
 
