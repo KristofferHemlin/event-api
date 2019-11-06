@@ -240,13 +240,13 @@ export async function sendResetPasswordEmail(req, res) {
       if (user) {
         const token = crypto.randomBytes(20).toString('hex');
         const expireDate = new Date(Date.now() + 3600000);  //Expires in 1h
-        var tokenHash = crypto.createHmac('sha256', process.env.JWT_SECRET).update(token).digest('hex');
+        var tokenHash = crypto.createHmac('sha256', process.env.RESET_SECRET).update(token).digest('hex');
 
         user.resetPwdToken = tokenHash;
         user.resetPwdExpireAt = expireDate;
 
         getRepository(User).save(user).then( usr => {
-          const url = "https://eventapp-master-api.azurewebsites.net/deeplink/"+token;
+          const url = process.env.API_URL+"/deeplink/"+token;
           const emailTemplate = mail.resetPasswordTemplate(user, url);
           
           mail.transporter.sendMail(emailTemplate, (err, info) => {
@@ -273,13 +273,13 @@ export async function sendResetPasswordEmail(req, res) {
 
 export async function redirectDeepLink(req, res) {
   const token = req.params.token
-  res.redirect('evently://resetpassword/'+token);
+  res.redirect('evently://resetpassword/'+token); //TODO: CHANGE TO CORRECT APP NAME
   return;
 }
 
 export async function resetPassword(req, res) {
   const token = req.params.token;
-  const tokenHash = crypto.createHmac('sha256', process.env.JWT_SECRET).update(token).digest('hex');
+  const tokenHash = crypto.createHmac('sha256', process.env.RESET_SECRET).update(token).digest('hex');
 
   createQueryBuilder(User)
     .addSelect("User.resetPwdExpireAt")
