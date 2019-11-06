@@ -310,7 +310,8 @@ export async function firstUpdate(req, res) {
         const [pwdValid, errorMessagePwd] = validatePassword(newPwd, "password");
         const [inputValid, errorMessageUser] = validateUser(req.body);
 
-        const errorInfo = Object.assign({}, errorMessagePwd, errorMessageUser);
+        const errorInfo = errorMessageUser;
+        errorInfo["password"] = errorMessagePwd;
 
         if (!inputValid || !pwdValid) {
           if (req.file){
