@@ -5,9 +5,9 @@ import User from '../entities/user.entity';
 import ActivityUpdateLog from '../entities/activitylog.entity';
 import {validateActivity} from '../modules/validation';
 import PlayerId from '../entities/playerId.entity';
-import { getStorage, uploadFile, removeFile, getDataUrl } from '../modules/fileHelpers';
+import { getStorage, uploadFile, removeFile, getDataUrl, resizeAndCompress, ImageType, removeAllFiles, resizeImage } from '../modules/fileHelpers';
 
-const storage = getStorage("public", "activityImage")
+const storage = getStorage("public/original", "activityImage")
 
 export async function createActivity(req, res) {
   
@@ -69,13 +69,14 @@ export async function createActivity(req, res) {
   
     getRepository(Activity).save(activity)
       .then(activity => {
+        resizeAndCompress(req.file.path, 50);
         return res.status(201).send({ 
             data: activity,
             message: `Activity ${activity.title} created.`});
       })
       .catch(error => {
         if (req.file) {
-          removeFile(req.file.path);
+          removeAllFiles(req.file.path);
         }
         console.error("Error while trying to create an activity:", error);
         return res.status(500).send({
@@ -108,7 +109,7 @@ export async function getActivity(req, res) {
   getRepository(Activity).findOne({id: req.params.activityId})
     .then(
       activity => {
-        activity.coverImageUrl = getDataUrl(activity.coverImageUrl);
+        activity.coverImageUrl = getDataUrl(activity.coverImageUrl, ImageType.COMPRESSED);
         return res.status(200).send(activity)})
     .catch(error => {
       console.error("Error while fetching activity:", error);
@@ -142,7 +143,7 @@ export async function getActivityUsers(req, res) {
   .then(
     participants => {
       // const participantsWithImages = participants.map(participant => {
-      //   participant.profileImageUrl = getDataUrl(participant.profileImageUrl);
+      //   participant.profileImageUrl = getDataUrl(participant.profileImageUrl, ImageType.MINIATURE);
       //   return participant;
       // })
       res.status(200).send(participants)})
@@ -165,9 +166,9 @@ export async function deleteActivity(req, res) {
   .then(_ => {
     if (activity.coverImageUrl) {
       const coverImageUrl = activity.coverImageUrl.split(":")[1];
-      removeFile(coverImageUrl);
+      removeAllFiles(coverImageUrl);
     }
-    res.status(204).send()
+    return res.status(204).send()
   })
   .catch(error => {
     res.status(500).send({
@@ -293,14 +294,16 @@ export async function updateActivity(req, res) {
           removeFile(req.file.path);
         }
         console.error("Error while trying to save activity:", error);
-        return res.status(500).send({
+        res.status(500).send({
           type: error.name,
           message: "Could not update the activity"})
+        return;
       })
     
     if (savedActivity) {
       if (req.file) {
-        removeFile(oldFileUrl);
+        resizeAndCompress(req.file.path, 50);
+        removeAllFiles(oldFileUrl);
       }
     }
   
@@ -414,13 +417,10 @@ export async function deleteCoverImage(req, res) {
 
   
   if (activity.coverImageUrl){
-    console.log("coverimage: ", activity.coverImageUrl);
     const filePath = activity.coverImageUrl.split(":")[1];
-    console.log("filepath innan. ", filePath);
     activity.coverImageUrl = null;
     getRepository(Activity).save(activity).then(activity => {
-      console.log("filepath", filePath);
-      removeFile(filePath)
+      removeAllFiles(filePath)
       return res.status(204).send();
     }).catch(error => {
       console.error("Error while saving activity with no image: ", error)

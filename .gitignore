@@ -7,4 +7,8 @@ src/.DS_Store
 src/seeds/convertedCSV.json
 public/*
 !public/.init
+!public/**/*
+public/**/*.png
+public/**/*.jpg
+public/**/*.jpeg
 dist

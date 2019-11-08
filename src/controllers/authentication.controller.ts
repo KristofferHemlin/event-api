@@ -141,7 +141,7 @@ function generateTokens(user: User){
   return [accessToken, refreshToken]
 }
 
-export function validateAccessToken(req, res) {
+export async function validateAccessToken(req, res) {
   const bearerToken =  req.headers.authorization; // Bearer {token}
   if (bearerToken){
     const [_, accessToken] = bearerToken.split(" "); 

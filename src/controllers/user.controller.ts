@@ -4,17 +4,22 @@ import Company from '../entities/company.entity';
 import Event from '../entities/event.entity';
 import { getRepository, getConnection, createQueryBuilder } from "typeorm";
 import { Request, Response } from 'express';
-import * as fs from 'fs';
 import * as excelToJson from 'convert-excel-to-json';
 
 import ActivityUpdateLog from '../entities/activitylog.entity';
 import { validateUser, validatePassword } from '..//modules/validation';
 import PlayerId from '../entities/playerId.entity';
-import { getStorage, uploadFile, removeFile, getDataUrl} from '../modules/fileHelpers';
-import Activity from '../entities/activity.entity';
+import { 
+  getStorage, 
+  uploadFile, 
+  removeFile, 
+  getDataUrl,
+  removeAllFiles, 
+  ImageType, 
+  resizeAndCompress} from '../modules/fileHelpers';
 
 // Get storage for multer
-const storage = getStorage("public", "profileImage")
+const storage = getStorage("public/original", "profileImage")
 
 export async function createUser(req, res) {
 
@@ -80,7 +85,7 @@ export async function getUserById(req, res) {
   getRepository(User).findOne({ id: req.params.userId }, { relations: ['company', 'activities', 'events'] })
   .then(user => {
       if (user) {
-        user.profileImageUrl = getDataUrl(user.profileImageUrl);
+        user.profileImageUrl = getDataUrl(user.profileImageUrl, ImageType.COMPRESSED);
         return res.status(200).send(user);
       } else {
         return res.status(404).send({ message: "No user exists for the provided id" });
@@ -96,14 +101,15 @@ export async function getUserById(req, res) {
 }
 
 export async function updateUser(req, res) {
+
   let userToUpdate = await getRepository(User).findOne({ id: req.params.userId });
 
   if (!userToUpdate) {
     return res.status(404).send({ message: "No user exists for the provided id." })
   }
-
-  uploadFile(storage, req, res, (err) => {
+  uploadFile(storage, req, res, async (err) => {
     // Check for any faults with the image upload.
+
     if (err) {
       console.error("Error while processing form data:", err)
       return res.status(500).send({
@@ -123,7 +129,7 @@ export async function updateUser(req, res) {
         details: errorInfo})
       return;
     }
-  
+    
     userToUpdate.firstName = req.body.firstName;
     userToUpdate.lastName = req.body.lastName;
     userToUpdate.phone = req.body.phone;
@@ -138,27 +144,27 @@ export async function updateUser(req, res) {
     } else {
       oldFilePath = null
     }
-    
     if (req.file){
       userToUpdate.profileImageUrl = req.file.mimetype+":"+req.file.path;
     }
-    
+
     getRepository(User).save(userToUpdate)
-    .then(response => {
+    .then(async response => {
       if (req.file){  // Only remove old file if there is a new file
-        removeFile(oldFilePath);
+        resizeAndCompress(req.file.path, 40)
+        removeAllFiles(oldFilePath);
       }
-        return res.status(200).send(response);
+      res.status(200).send(response);
+      return
       })
       .catch(error => {
         if (req.file) {
-          removeFile(req.file.path);
+          removeAllFiles(req.file.path);
         }
         console.error("Error while updating user:", error);
         return res.status(500).send({ message: "Could not update user." });
       })
   })
-
 }
 
 export async function deleteUser(req, res) {
@@ -169,6 +175,7 @@ export async function deleteUser(req, res) {
 
   await getRepository(User).remove(user)
     .then(response => {
+      removeAllFiles(user.profileImageUrl);
       return res.status(204).send();
     })
     .catch(error => {
@@ -238,7 +245,7 @@ export async function getCurrentEvent(req, res) {
     .then(
       events => {
         const currentEvent = events[0];
-        currentEvent.coverImageUrl = getDataUrl(currentEvent.coverImageUrl);
+        currentEvent.coverImageUrl = getDataUrl(currentEvent.coverImageUrl, ImageType.COMPRESSED);
         return res.status(200).send(currentEvent);
       },
       error => {
@@ -337,12 +344,13 @@ export async function firstUpdate(req, res) {
         
         getRepository(User).save(user).then(response => {
           response.password = undefined;
+          resizeAndCompress(req.file.path, 40)
           res.status(200).send(response);
         });
       })
       .catch(error => {
         if (req.file){
-          removeFile(req.file.path)
+          removeAllFiles(req.file.path)
         }
         if (error.response) {
           return res.status(error.response.status).send(error.response.data);
@@ -391,7 +399,7 @@ export async function deleteProfileImage(req, res) {
     const filePath = user.profileImageUrl.split(":")[1];
     user.profileImageUrl = null;
     getRepository(User).save(user).then(user => {
-      removeFile(filePath)
+      removeAllFiles(filePath)
       return res.status(204).send();
     }).catch(error => {
       console.error("Error while saving user with no image: ", error)

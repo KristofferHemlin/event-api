@@ -5,9 +5,9 @@ import User from '../entities/user.entity';
 import Activity from '../entities/activity.entity';
 
 import {validateEvent} from '../modules/validation';
-import { getStorage, uploadFile, removeFile, getDataUrl } from "../modules/fileHelpers";
+import { getStorage, uploadFile, removeFile, getDataUrl, resizeAndCompress, ImageType, removeAllFiles } from "../modules/fileHelpers";
 
-const storage = getStorage("public", "eventImage");
+const storage = getStorage("public/original", "eventImage");
 
 export async function createEvent(req, res) {
   
@@ -54,6 +54,7 @@ export async function createEvent(req, res) {
 
     if (req.file) {
       event.coverImageUrl = req.file.mimetype+":"+req.file.path;
+      resizeAndCompress(req.file.path, 50);
     }
   
     getRepository(Event).save(event)
@@ -62,7 +63,7 @@ export async function createEvent(req, res) {
     })
     .catch(error => {
       if (req.file) {
-        removeFile(req.file.path);
+        removeAllFiles(req.file.path);
       }
       return res.status(500).send({
         type: error.name,
@@ -76,7 +77,7 @@ export async function getEventById(req, res) {
   getRepository(Event)
     .findOne({id: eventId})
     .then(event => {
-      event.coverImageUrl = getDataUrl(event.coverImageUrl);
+      event.coverImageUrl = getDataUrl(event.coverImageUrl, ImageType.COMPRESSED);
       res.status(200).send(event)
     }).catch(error => {
       console.error("Error while fetching event: ", error)
@@ -134,13 +135,14 @@ export async function updateEvent(req, res){
     getRepository(Event).save(event)
     .then(response => {
       if (req.file) {
-        removeFile(oldFilePath);
+        resizeAndCompress(req.file.path, 50);
+        removeAllFiles(oldFilePath);
       }
       return res.status(200).send(response)
     })
     .catch(error => {
       if (req.file) {
-        removeFile(req.file.path);
+        removeAllFiles(req.file.path);
       }
       console.error("Error while updating event:", error);
       return res.status(500).send({
@@ -211,7 +213,7 @@ export async function getEventParticipant(req, res) {
   .andWhere("User.id = :userId",   { userId: req.params.userId })
   .getOne()
   .then(user => {
-    user.profileImageUrl = getDataUrl(user.profileImageUrl);
+    user.profileImageUrl = getDataUrl(user.profileImageUrl, ImageType.COMPRESSED);
     return res.status(200).send(user);
   })
   .catch(error => {
@@ -308,10 +310,10 @@ export async function deleteEvent(req, res){
   getRepository(Activity).remove(event.activities)
   .then(response => {
     event.activities.map(activity => {
-      removeFile(activity.coverImageUrl)});
+      removeAllFiles(activity.coverImageUrl)});
       getRepository(Event).remove(event)
       .then(response2 => {
-        removeFile(coverImage);
+        removeAllFiles(coverImage);
         return res.status(204).send();
       })
       .catch(error2 => {
@@ -394,7 +396,7 @@ export async function deleteCoverImage(req, res) {
     const filePath = event.coverImageUrl.split(":")[1];
     event.coverImageUrl = null;
     getRepository(Event).save(event).then(event => {
-      removeFile(filePath)
+      removeAllFiles(filePath)
       return res.status(204).send();
     }).catch(error => {
       console.error("Error while saving event with no image: ", error)
