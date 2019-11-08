@@ -53,11 +53,10 @@ export function removeFile(path){
   }
 };
 
-export function removeAllFiles(originalPath) {
-  if (originalPath) {
-    removeFile(originalPath);
-    removeFile(originalPath.replace("original", "compressed"));
-    removeFile(originalPath.replace("original", "miniature"));
+export function removeAllFiles(compressedPath) {
+  if (compressedPath) {
+    removeFile(compressedPath);
+    removeFile(compressedPath.replace("compressed", "miniature"));
   }
 }
 
@@ -88,11 +87,18 @@ export async function compressAndResizeImage(filePath) {
 
 export async function resizeAndCompress(filePath, compressQuality) {
   const outputPath = filePath.replace(ImageType.ORIGINAL, ImageType.MINIATURE)
-  resizeImage(filePath, outputPath, 200).then(data => {
-    compressImage(outputPath, 60, "public/"+ImageType.MINIATURE)
-  });
+  console.time("CompressTime");
+  const result = await compressImage(filePath, compressQuality, "public/"+ImageType.COMPRESSED)
+  console.timeEnd("CompressTime");
+  const compressOutputpath = filePath.replace("original", ImageType.COMPRESSED);
+  
   // Need to wait here, otherwhise the file won't have time to be saved before trying to get fetched.
-  return await compressImage(filePath, compressQuality, "public/"+ImageType.COMPRESSED)
+  console.time("Miniature time");
+  await resizeImage(filePath, outputPath, 200).then(data => {
+    return compressImage(outputPath, 60, "public/"+ImageType.MINIATURE)
+  });
+  console.timeEnd("Miniature time");
+  return compressOutputpath;
 
 }
 
@@ -121,7 +127,7 @@ export async function compressImage(filePath, quality, outputPath?) {
       return outputPath;
     }
     return files[0].data;
-  });
+  })//.catch(error => {console.error("Error in imagemin: ", error)});
 
 }
 

@@ -107,6 +107,7 @@ export async function updateUser(req, res) {
   if (!userToUpdate) {
     return res.status(404).send({ message: "No user exists for the provided id." })
   }
+  console.time("Multer time:")
   uploadFile(storage, req, res, async (err) => {
     // Check for any faults with the image upload.
 
@@ -118,6 +119,7 @@ export async function updateUser(req, res) {
         error: err
       });
     }
+    console.timeEnd("Multer time:")
     const [inputValid, errorInfo] = validateUser(req.body);
   
     if (!inputValid) {
@@ -144,26 +146,46 @@ export async function updateUser(req, res) {
     } else {
       oldFilePath = null
     }
+    let compressionDone;
+
     if (req.file){
-      userToUpdate.profileImageUrl = req.file.mimetype+":"+req.file.path;
+      compressionDone = await resizeAndCompress(req.file.path, 40).then(compressedPath => {
+        userToUpdate.profileImageUrl = req.file.mimetype+":"+compressedPath;
+        removeFile(req.file.path);
+        return true;
+      }).catch(error => {
+        console.error("Error during image compression: ", error)
+        return false;
+      })
+      console.log("Compression done: ", compressionDone);
+    } else {
+      compressionDone = true;
     }
 
-    getRepository(User).save(userToUpdate)
-    .then(async response => {
-      if (req.file){  // Only remove old file if there is a new file
-        resizeAndCompress(req.file.path, 40)
-        removeAllFiles(oldFilePath);
-      }
-      res.status(200).send(response);
-      return
-      })
-      .catch(error => {
-        if (req.file) {
-          removeAllFiles(req.file.path);
+    if (compressionDone) {
+      getRepository(User).save(userToUpdate)
+      .then(response => {
+        if (req.file){  // Only remove old file if there is a new file
+          removeAllFiles(oldFilePath);
         }
-        console.error("Error while updating user:", error);
-        return res.status(500).send({ message: "Could not update user." });
-      })
+        res.status(200).send(response);
+        return
+        })
+        .catch(error => {
+          if (req.file) {
+            removeAllFiles(req.file.path);
+          }
+          console.error("Error while updating user:", error);
+          return res.status(500).send({ message: "Could not update user." });
+        })
+    } else {
+      res.status(400).send({message: "Could not upload image."})
+      if (req.file){
+        removeAllFiles(req.file.path);
+      }
+      return;
+    }
+
   })
 }
 
