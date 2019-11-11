@@ -14,10 +14,19 @@ export async function createEvent(req, res) {
   uploadFile(storage, req, res, async (err) => {
     if (err) {
       console.error("Error from multer: ", err)
-      return res.status(500).send({
-        type: err.name,
-        message: "Error while parsing form data"
-      })
+      let errorMessage;
+      if (err.code === "LIMIT_FILE_SIZE") {
+        errorMessage = {
+          type: err.name,
+          message: "Image size too large, must be smaller than 10 MB"
+        }
+      } else {
+        errorMessage = {
+          type: err.name,
+          message: "Could not parse form data"
+        }
+      }
+      return res.status(500).send(errorMessage)
     }
 
     let company = await getRepository(Company).findOne({ id: req.body.companyId });
@@ -31,15 +40,15 @@ export async function createEvent(req, res) {
       });
     }
   
-    const [inputValid, errorInfo] = validateEvent(req.body);
+    const [inputValid, errorMessage, errorDetails] = validateEvent(req.body);
   
     if (!inputValid) {
       if (req.file) {
         removeFile(req.file.path)
       }
       res.status(400).send({
-        message: "One or more fields are wrong.",
-        details: errorInfo})
+        message: errorMessage,
+        details: errorDetails})
       return;
     }
   
@@ -103,20 +112,30 @@ export async function updateEvent(req, res){
 
     if (err) {
       console.error("Error from multer: ", err)
-      return res.status(500).send({
-        type: err.name,
-        message: "Error while uploading image"})
+      let errorMessage;
+      if (err.code === "LIMIT_FILE_SIZE") {
+        errorMessage = {
+          type: err.name,
+          message: "Image size too large, must be smaller than 10 MB"
+        }
+      } else {
+        errorMessage = {
+          type: err.name,
+          message: "Could not parse form data"
+        }
+      }
+      return res.status(500).send(errorMessage)
     }
 
-    const [inputValid, errorInfo] = validateEvent(req.body);
+    const [inputValid, errorMessage, errorDetails] = validateEvent(req.body);
   
     if (!inputValid) {
       if (req.file) {
         removeFile(req.file.path);
       }
       res.status(400).send({
-        message: "One or more fields are wrong.",
-        details: errorInfo})
+        message: errorMessage,
+        details: errorDetails})
       return;
     }
     event.title = req.body.title;

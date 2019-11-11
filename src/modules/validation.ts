@@ -2,120 +2,153 @@ import validator from 'validator';
 import * as moment from 'moment';
 
 export function validateFields(input, requiredFields) {
-    let errorMessage = {};
+    let detailedMessage = {};
     let isValid = true;
 
     requiredFields.map(field => {
         if (!input[field]){
-            errorMessage[field] = "Required field"
+            detailedMessage[field] = "Required field"
             isValid = false;
         } else {
             if (validator.isEmpty(input[field], {ignore_whitespace:true})) {
-                errorMessage[field] = "Cannot be empty";
+                detailedMessage[field] = "Cannot be empty";
                 isValid = false;
             }
         }
     })
-    return [isValid, errorMessage]
+    return [isValid, detailedMessage]
 }
 
 export function validateActivity(activity) {
 
     const requiredFields = ["title", "startTime", "endTime", "location"];
-    let [isValid, errorMessage] = validateFields(activity, requiredFields)
+    let [isValid, detailedMessage] = validateFields(activity, requiredFields)
 
     if (activity.startTime) {
         if (!moment(activity.startTime, "YYYY-MM-DD HH:mm", true).isValid()){
-            errorMessage["startTime"] = "Must have format YYYY-MM-DD HH:mm";
+            detailedMessage["startTime"] = "Must have format YYYY-MM-DD HH:mm";
             isValid = false;
         }
     }
 
     if (activity.endTime) {
         if (!moment(activity.endTime, "YYYY-MM-DD HH:mm", true).isValid()){
-            errorMessage["endTime"] = "Must have format YYYY-MM-DD HH:mm";
+            detailedMessage["endTime"] = "Must have format YYYY-MM-DD HH:mm";
             isValid = false;
         } else {
             if (!validator.isAfter(activity.endTime, activity.startTime)) {
-                errorMessage["endTime"] = `Must be after startTime (${activity.startTime})`;
+                detailedMessage["endTime"] = `Must be after startTime (${activity.startTime})`;
                 isValid = false;
             }
         }
     }
 
-    return [isValid, errorMessage]
+    const errorMessage = createErrorMessage(detailedMessage);
+
+    return [isValid, errorMessage, detailedMessage]
 
 }
 
 export function validateEvent(event) {
     const requiredFields = ["title", "startTime", "endTime", "location"];
-    let [isValid, errorMessage] = validateFields(event, requiredFields);
+    let [isValid, detailedMessage] = validateFields(event, requiredFields);
 
     const dateFormats = ["YYYY-MM-DD HH:mm", "YYYY-MM-DD"];
 
     if (event.startTime) {
         if (!moment(event.startTime, dateFormats, true).isValid()) {
-            errorMessage["startTime"] = "Must have format YYYY-MM-DD HH:mm or YYYY-MM-DD";
+            detailedMessage["startTime"] = "Must have format YYYY-MM-DD HH:mm or YYYY-MM-DD";
             isValid = false;
         }
     }
 
     if (event.endTime) {
         if (!moment(event.endTime, dateFormats, true).isValid()){
-            errorMessage["endTime"] = "Must have format YYYY-MM-DD HH:mm";
+            detailedMessage["endTime"] = "Must have format YYYY-MM-DD HH:mm";
             isValid = false;
         } else {
             if (!validator.isAfter(event.endTime, event.startTime) && event.startTime !== event.endTime) {
-                errorMessage["endTime"] = `Must be after startTime (${event.startTime})`;
+                detailedMessage["endTime"] = `Must be after startTime (${event.startTime})`;
                 isValid = false;
             }
         }
     }
 
-    return [isValid, errorMessage]
+    const errorMessage = createErrorMessage(detailedMessage);
+
+    return [isValid, errorMessage, detailedMessage]
 }
 
 export function validateUser(user) {
     const requiredFields = ["email", "firstName", "lastName", "phone"];
 
-    let [isValid, errorMessage] = validateFields(user, requiredFields);
+    let [isValid, detailedMessage] = validateFields(user, requiredFields);
 
     if (user.email) {
         if (!validator.isEmail(user.email)) {
-            errorMessage["email"] = "Must be an email address";
+            detailedMessage["email"] = "Must be an email address";
             isValid = false;
         }
     }
 
     if (user.phone) {
         if (!validator.isMobilePhone(user.phone)) {
-            errorMessage["phone"] = "Must be a phone number";
+            detailedMessage["phone"] = "Must be a phone number";
             isValid = false;
         }
     }
-    return [isValid, errorMessage];
+
+    const errorMessage = createErrorMessage(detailedMessage);
+
+    return [isValid, errorMessage, detailedMessage];
 }
 
 export function validatePassword(pwd:string, fieldName:string, oldPwd?:string){
 
     let isValid = true;
-    let errorMessage;
+    let errorMessage = "";
     
     if (pwd) {
         if (validator.isEmpty(pwd, {ignore_whitespace:true}) || pwd.length < 6) {
             isValid = false;
-            errorMessage = "Need to be at least 6 characters"
+            errorMessage = "Password need to be at least 6 characters"
         }
     } else {
         isValid = false;
-        errorMessage = "Required"
+        errorMessage = "Password required"
     }
 
     if (oldPwd){
         if (pwd === oldPwd) {
             isValid = false;
-            errorMessage = "Cannot be the same as the current password"
+            errorMessage = "New password cannot be the same as the current password"
         }
     }
     return [isValid, errorMessage]
+}
+
+function createErrorMessage(detailedMessage) {
+    let prettyFields = {"firstName": "First Name", "lastName": "Last Name", 
+        "phone": "Phone", "email": "Email", "title": "Title",
+        "startTime": "Start time", "endTime": "End time", "location": "Location"}
+    
+    const messageFields = Object.keys(detailedMessage);
+    
+    let message;
+    if (messageFields.length > 1) {        
+        const lastField = messageFields.pop();
+        const firstField = messageFields.pop();
+        let messageStart = prettyFields[firstField];    
+        message = messageFields.reduce((message, field) => {
+            return message + ", "+ prettyFields[field]
+        }, messageStart)
+        message += " and "+prettyFields[lastField] + " are wrong"
+
+    } else if (messageFields.length === 1) {
+        message = prettyFields[messageFields[0]]+ " is wrong"
+    } else {
+        message = ""
+    }
+    
+    return message;
 }

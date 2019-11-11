@@ -15,10 +15,19 @@ export async function createActivity(req, res) {
     
     if (err) {
       console.error("Error in multer: ", err);
-      return res.status(500).send({
-        type: err.name,
-        message: "Could not parse form data"
-      })
+      let errorMessage;
+      if (err.code === "LIMIT_FILE_SIZE") {
+        errorMessage = {
+          type: err.name,
+          message: "Image size too large, must be smaller than 10 MB"
+        }
+      } else {
+        errorMessage = {
+          type: err.name,
+          message: "Could not parse form data"
+        }
+      }
+      return res.status(500).send(errorMessage)
     }
     
     const eventId = req.body.eventId;
@@ -41,14 +50,14 @@ export async function createActivity(req, res) {
       })
     }
   
-    const [inputValid, errorInfo] = validateActivity(req.body)
+    const [inputValid, errorMessage, errorInfo] = validateActivity(req.body)
   
     if (!inputValid) {
       if (req.file) {
         removeFile(req.file.path);
       }
       res.status(400).send({
-        message: "One or more fields are wrong.",
+        message: errorMessage,
         details: errorInfo})
       return;
     }
@@ -257,20 +266,29 @@ export async function updateActivity(req, res) {
 
     if (err) {
       console.error("Error in multer: ", err);
-      res.send(500).send({
-        type: err.name,
-        message: "Could not parse form data"
-      })
+      let errorMessage;
+      if (err.code === "LIMIT_FILE_SIZE") {
+        errorMessage = {
+          type: err.name,
+          message: "Image size too large, must be smaller than 10 MB"
+        }
+      } else {
+        errorMessage = {
+          type: err.name,
+          message: "Could not parse form data"
+        }
+      }
+      return res.status(500).send(errorMessage)
     }
 
-    const [inputValid, errorInfo] = validateActivity(req.body);
+    const [inputValid, errorMessage, errorInfo] = validateActivity(req.body);
   
     if (!inputValid) {
       if (req.file) {
         removeFile(req.file.path);
       }
       res.status(400).send({
-        message: "One or more fields are wrong.",
+        message: errorMessage,
         details: errorInfo})
       return;
     }

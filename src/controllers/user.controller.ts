@@ -24,12 +24,12 @@ const storage = getStorage("public/original", "profileImage")
 
 export async function createUser(req, res) {
 
-  const [inputValid, errorInfo] = validateUser(req.body);
+  const [inputValid, errorMessage, errorDetails] = validateUser(req.body);
 
   if (!inputValid) {
     res.status(400).send({
-      message: "One or more fields are wrong.",
-      details: errorInfo})
+      message: errorMessage,
+      details: errorDetails})
     return;
   }
 
@@ -112,22 +112,30 @@ export async function updateUser(req, res) {
 
     if (err) {
       console.error("Error while processing form data:", err)
-      return res.status(500).send({
-        type: err.name,
-        message: "Error while processing form data",
-        error: err
-      });
+      let errorMessage;
+      if (err.code === "LIMIT_FILE_SIZE") {
+        errorMessage = {
+          type: err.name,
+          message: "Image size too large, must be smaller than 10 MB"
+        }
+      } else {
+        errorMessage = {
+          type: err.name,
+          message: "Could not parse form data"
+        }
+      }
+      return res.status(500).send(errorMessage)
     }
 
-    const [inputValid, errorInfo] = validateUser(req.body);
+    const [inputValid, errorMessage, errorDetails] = validateUser(req.body);
   
     if (!inputValid) {
       if (req.file) {
         removeFile(req.file.path);
       }
       res.status(400).send({
-        message: "One or more fields are wrong.",
-        details: errorInfo})
+        message: errorMessage,
+        details: errorDetails})
       return;
     }
     
@@ -315,10 +323,19 @@ export async function firstUpdate(req, res) {
     // Check for any faults with the image upload.
     if (err) {
       console.error("Error while processing form data:", err)
-      return res.status(500).send({
-        type: err.name,
-        message: "Error while processing form data"
-      });
+      let errorMessage;
+      if (err.code === "LIMIT_FILE_SIZE") {
+        errorMessage = {
+          type: err.name,
+          message: "Image size too large, must be smaller than 10 MB"
+        }
+      } else {
+        errorMessage = {
+          type: err.name,
+          message: "Could not parse form data"
+        }
+      }
+      return res.status(500).send(errorMessage)
     }
 
     getRepository(User).findOne({ id: userId })
@@ -331,10 +348,10 @@ export async function firstUpdate(req, res) {
         }
         const newPwd = req.body.password;
         const [pwdValid, errorMessagePwd] = validatePassword(newPwd, "password");
-        const [inputValid, errorMessageUser] = validateUser(req.body);
+        const [inputValid, errorMessageUser, errorDetailsUser] = validateUser(req.body);
 
-        const errorInfo = errorMessageUser;
-        errorInfo["password"] = errorMessagePwd;
+        const errorDetails = errorDetailsUser;
+        errorDetails["password"] = errorMessagePwd;
 
         if (!inputValid || !pwdValid) {
           if (req.file){
@@ -342,8 +359,8 @@ export async function firstUpdate(req, res) {
           }
 
           res.status(400).send({
-            message: "One or more fields are wrong.",
-            details: errorInfo})
+            message: errorMessagePwd+"\n"+errorMessageUser,
+            details: errorDetails})
           return;
         }
 

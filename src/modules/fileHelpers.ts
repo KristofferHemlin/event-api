@@ -23,7 +23,7 @@ export function uploadFile(storage, req, res, callback){
   multer({
       storage: storage,
       limits: {
-        fileSize: 5 * 1024 * 1024,
+        fileSize: 10 * 1024 * 1024,
         file: 1,
       },
       fileFilter: (req, file, cb) => {
