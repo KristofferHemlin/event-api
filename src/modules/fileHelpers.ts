@@ -33,6 +33,7 @@ export function uploadFile(storage, req, res, callback){
         }
     
         // otherwise, return error
+        console.log("FIL: ",file);
         return cb({ message: 'Only ' + accepted_extensions.join(", ") + ' files are allowed!' })
       }
   }).single('image')(req, res, callback)
@@ -47,43 +48,46 @@ export function removeFile(path){
     try {
     fs.unlinkSync(path);
     } catch (error) {
-      console.error("Could not remove file: ", path)
-      console.error(error)
+      console.error("Could not remove file:", path);
     }
   }
 };
 
-export function removeAllFiles(compressedPath) {
-  if (compressedPath) {
-    removeFile(compressedPath);
-    removeFile(compressedPath.replace("compressed", "miniature"));
-  }
+export function removeAllFiles(filePaths: string[]) {
+  filePaths.map(filePath => {
+    removeFile(filePath);
+  })
 }
 
 export function getDataUrl(imageUrl, imageType?: ImageType) {
   if(imageUrl){
     if (imageType) {
-      imageUrl = imageUrl.replace(ImageType.ORIGINAL, imageType);
+      imageUrl = imageUrl.replace(ImageType.COMPRESSED, imageType);
     }
     let encoding = 'base64';
     let [mimeType, imagePath] = imageUrl.split(':');
-    let imageString = fs.readFileSync(imagePath, encoding);
-    return "data:" + mimeType + ";"+encoding+"," + imageString;
+    try {
+      let imageString = fs.readFileSync(imagePath, encoding);
+      return "data:" + mimeType + ";"+encoding+"," + imageString;
+    } catch (error){
+      console.log("Could not read file", imagePath)
+      return null;
+    }
   }
   return imageUrl;
 }
 
-export async function compressAndResizeImage(filePath) {
-  // This does not work properly for png, the image size is larger in the resized and compressed version.
-  compressImage(filePath, 50, "public/compressed")
-    .then(compressedPath => {
-      const outputPath = filePath.replace(ImageType.ORIGINAL, ImageType.MINIATURE)
-      resizeImage(compressedPath, outputPath, 200);
-    })
-    .catch(error => {
-      console.error("Error during compression and resizing of image: ", error);
-    });  
-}
+// export async function compressAndResizeImage(filePath) {
+//   // This does not work properly for png, the image size is larger in the resized and compressed version.
+//   compressImage(filePath, 50, "public/compressed")
+//     .then(compressedPath => {
+//       const outputPath = filePath.replace(ImageType.ORIGINAL, ImageType.MINIATURE)
+//       resizeImage(compressedPath, outputPath, 200);
+//     })
+//     .catch(error => {
+//       console.error("Error during compression and resizing of image: ", error);
+//     });  
+// }
 
 export async function resizeAndCompress(filePath, compressQuality) {
   const outputPath = filePath.replace(ImageType.ORIGINAL, ImageType.MINIATURE)
@@ -127,7 +131,7 @@ export async function compressImage(filePath, quality, outputPath?) {
       return outputPath;
     }
     return files[0].data;
-  })//.catch(error => {console.error("Error in imagemin: ", error)});
+  })
 
 }
 
@@ -142,4 +146,27 @@ export async function resizeImage(filePath, outputPath, size) {
     .catch(error => {
       console.error("Error while resizing image: ", error);
     })
+}
+
+
+export async function compressAndResize(file, compressQuality=50) {
+  let newFilePaths;
+  let compressionDone;
+  let pathToSave;
+
+  if (file){
+    newFilePaths = ["public/compressed/"+file.filename, "public/miniature/"+file.filename];
+    compressionDone = await resizeAndCompress(file.path, compressQuality).then(compressedPath => {
+      pathToSave = file.mimetype+":"+compressedPath;
+      return true;
+    }).catch(error => {
+      console.error("Error during image compression: ", error)
+      return false;
+    })
+  } else {
+    compressionDone = true;
+    newFilePaths = []
+    pathToSave = null;
+  }
+  return {newFilePaths, compressionDone, pathToSave}
 }

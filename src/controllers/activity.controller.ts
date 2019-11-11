@@ -5,7 +5,7 @@ import User from '../entities/user.entity';
 import ActivityUpdateLog from '../entities/activitylog.entity';
 import {validateActivity} from '../modules/validation';
 import PlayerId from '../entities/playerId.entity';
-import { getStorage, uploadFile, removeFile, getDataUrl, resizeAndCompress, ImageType, removeAllFiles, resizeImage } from '../modules/fileHelpers';
+import { getStorage, uploadFile, removeFile, getDataUrl, ImageType, removeAllFiles, compressAndResize } from '../modules/fileHelpers';
 
 const storage = getStorage("public/original", "activityImage")
 
@@ -63,28 +63,37 @@ export async function createActivity(req, res) {
     activity.location = req.body.location;
     activity.goodToKnow = req.body.goodToKnow;
 
+    const {pathToSave, newFilePaths, compressionDone} = await compressAndResize(req.file, 50)
+    
     if (req.file) {
-      activity.coverImageUrl = req.file.mimetype+":"+req.file.path;
+      removeFile(req.file.path); // Remove the original file to only save the compressed.
     }
-  
-    getRepository(Activity).save(activity)
-      .then(activity => {
-        resizeAndCompress(req.file.path, 50);
-        return res.status(201).send({ 
-            data: activity,
-            message: `Activity ${activity.title} created.`});
-      })
-      .catch(error => {
-        if (req.file) {
-          removeAllFiles(req.file.path);
-        }
-        console.error("Error while trying to create an activity:", error);
-        return res.status(500).send({
-            type: error.name,
-            message: `Could not create the activity ${req.body.title}.`
-          })
-      })
 
+    if (pathToSave) {
+      activity.coverImageUrl = pathToSave;
+    }
+    
+    if (compressionDone) {
+      getRepository(Activity).save(activity)
+        .then(activity => {
+          return res.status(201).send({ 
+              data: activity,
+              message: `Activity ${activity.title} created.`});
+        })
+        .catch(error => {
+          if (req.file) {
+            removeAllFiles(newFilePaths);
+          }
+          console.error("Error while trying to create an activity:", error);
+          return res.status(500).send({
+              type: error.name,
+              message: `Could not create the activity ${req.body.title}.`
+            })
+        })
+    } else {
+      removeAllFiles(newFilePaths);
+      return res.status(400).send({message: "Could not upload image."})
+    }
   })
 }
 
@@ -166,7 +175,7 @@ export async function deleteActivity(req, res) {
   .then(_ => {
     if (activity.coverImageUrl) {
       const coverImageUrl = activity.coverImageUrl.split(":")[1];
-      removeAllFiles(coverImageUrl);
+      removeAllFiles([coverImageUrl, coverImageUrl.replace(ImageType.COMPRESSED, ImageType.MINIATURE)]);
     }
     return res.status(204).send()
   })
@@ -280,75 +289,86 @@ export async function updateActivity(req, res) {
       oldFileUrl = null;
     }
 
+    const {pathToSave, newFilePaths, compressionDone} = await compressAndResize(req.file, 50);
+    
     if (req.file) {
-      activity.coverImageUrl = req.file.mimetype+":"+req.file.path;
+      removeFile(req.file.path); // Remove the original file to only save the compressed.
+    }
+
+    if (pathToSave) {
+      activity.coverImageUrl = pathToSave;
     }
     
     let activityLog = new ActivityUpdateLog();
     activityLog.activity = activity;
   
-    const savedActivity = await getRepository(Activity)
-      .save(activity)
-      .catch(error => {
-        if (req.file) {
-          removeFile(req.file.path);
-        }
-        console.error("Error while trying to save activity:", error);
-        res.status(500).send({
-          type: error.name,
-          message: "Could not update the activity"})
-        return;
-      })
+    if (compressionDone) {
+      const savedActivity = await getRepository(Activity)
+        .save(activity)
+        .then(response => {
+          if (req.file && oldFileUrl) {
+            removeAllFiles([oldFileUrl, oldFileUrl.replace(ImageType.COMPRESSED, ImageType.MINIATURE)]);
+          }
+          return response
+        })
+        .catch(error => {
+          if (req.file) {
+            removeAllFiles(newFilePaths);
+          }
+          console.error("Error while trying to save activity:", error);
+          res.status(500).send({
+            type: error.name,
+            message: "Could not update the activity"})
+          return;
+        })
     
-    if (savedActivity) {
-      if (req.file) {
-        resizeAndCompress(req.file.path, 50);
-        removeAllFiles(oldFileUrl);
-      }
+      // send push to all activity participants
+      createQueryBuilder(User)
+        .innerJoin("User.activities", "activities", "activities.id=:activityId", {activityId: activityId})
+        .innerJoinAndSelect("User.playerIds", "playerIds")
+        .getMany()
+        .then(users => {
+          if (users.length > 0) {
+            const recipients = [].concat(...users.map(user => {
+              return user.playerIds.map(playerId => {
+                return playerId.id;
+              })
+            }));
+            var pushMessage = { 
+              app_id: process.env.ONESIGNAL_ID,
+              headings: {"en": "Activity Updated", "sv": "Aktivitet uppdaterad"},
+              contents: {"en": activity.title, "sv": activity.title},
+              android_group: "activity_update",
+              include_player_ids: recipients
+            };
+            sendPush(pushMessage, (invalidIds) => {
+              invalidIds.map(id => {
+                createQueryBuilder(PlayerId)
+                  .delete()
+                  .where("player_id.id=:playerId", {playerId: id})
+                  .execute()
+                  .catch(error => {
+                  console.error(`Error while removing playerId ${id}: `, error)
+                  })
+              })
+            });
+          }
+        })
+        .catch(error => {
+          console.error("Error while sending push notification:", error);
+        });
+    
+      // Add activity update log
+      getRepository(ActivityUpdateLog).save(activityLog).then(
+        _ => {},
+        error => console.error("Could not log activity update for activity id: "+activityId, error));
+    
+      return res.status(200).send(savedActivity);
+
+    } else {
+      removeAllFiles(newFilePaths);
+      return res.status(400).send({message: "Could not upload image"});
     }
-  
-    // send push to all activity participants
-    createQueryBuilder(User)
-      .innerJoin("User.activities", "activities", "activities.id=:activityId", {activityId: activityId})
-      .innerJoinAndSelect("User.playerIds", "playerIds")
-      .getMany()
-      .then(users => {
-        if (users.length > 0) {
-          const recipients = [].concat(...users.map(user => {
-            return user.playerIds.map(playerId => {
-              return playerId.id;
-            })
-          }));
-          var pushMessage = { 
-            app_id: process.env.ONESIGNAL_ID,
-            headings: {"en": "Activity Updated", "sv": "Aktivitet uppdaterad"},
-            contents: {"en": activity.title, "sv": activity.title},
-            android_group: "activity_update",
-            include_player_ids: recipients
-          };
-          sendPush(pushMessage, (invalidIds) => {
-            invalidIds.map(id => {
-              createQueryBuilder(PlayerId)
-                .delete()
-                .where("player_id.id=:playerId", {playerId: id})
-                .execute()
-                .catch(error => {
-                console.error(`Error while removing playerId ${id}: `, error)
-                })
-            })
-          });
-        }
-      })
-      .catch(error => {
-        console.error("Error while sending push notification:", error);
-      });
-  
-    // Add activity update log
-    getRepository(ActivityUpdateLog).save(activityLog).then(
-      _ => {},
-      error => console.error("Could not log activity update for activity id: "+activityId, error));
-  
-    return res.status(200).send(savedActivity);
 
   })
 
@@ -420,7 +440,7 @@ export async function deleteCoverImage(req, res) {
     const filePath = activity.coverImageUrl.split(":")[1];
     activity.coverImageUrl = null;
     getRepository(Activity).save(activity).then(activity => {
-      removeAllFiles(filePath)
+      removeAllFiles([filePath, filePath.replace(ImageType.COMPRESSED, ImageType.MINIATURE)])
       return res.status(204).send();
     }).catch(error => {
       console.error("Error while saving activity with no image: ", error)

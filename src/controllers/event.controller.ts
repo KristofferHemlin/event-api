@@ -5,7 +5,7 @@ import User from '../entities/user.entity';
 import Activity from '../entities/activity.entity';
 
 import {validateEvent} from '../modules/validation';
-import { getStorage, uploadFile, removeFile, getDataUrl, resizeAndCompress, ImageType, removeAllFiles } from "../modules/fileHelpers";
+import { getStorage, uploadFile, removeFile, getDataUrl, resizeAndCompress, ImageType, removeAllFiles, compressAndResize } from "../modules/fileHelpers";
 
 const storage = getStorage("public/original", "eventImage");
 
@@ -52,23 +52,28 @@ export async function createEvent(req, res) {
     event.location = req.body.location;
     event.goodToKnow = req.body.goodToKnow;
 
+    const {pathToSave, newFilePaths, compressionDone} = await compressAndResize(req.file, 50)
+    
     if (req.file) {
-      event.coverImageUrl = req.file.mimetype+":"+req.file.path;
-      resizeAndCompress(req.file.path, 50);
+      removeFile(req.file.path); // Remove the original file to only save the compressed.
     }
-  
-    getRepository(Event).save(event)
-    .then(event => {
-      return res.status(201).send(event);
-    })
-    .catch(error => {
-      if (req.file) {
-        removeAllFiles(req.file.path);
-      }
-      return res.status(500).send({
-        type: error.name,
-        message: "Error while creating event. Event not created."});
-    })
+
+    if (pathToSave) {
+      event.coverImageUrl = pathToSave;
+    }
+
+    if (compressionDone) {
+      getRepository(Event).save(event)
+      .then(event => {
+        return res.status(201).send(event);
+      })
+      .catch(error => {
+        removeAllFiles(newFilePaths);
+        return res.status(500).send({
+          type: error.name,
+          message: "Error while creating event. Event not created."});
+      })
+    }
   })
 }
 
@@ -94,7 +99,7 @@ export async function updateEvent(req, res){
     return res.status(400).send({message: "Specified event does not exit."})
   }
 
-  uploadFile(storage, req, res, (err) => {
+  uploadFile(storage, req, res, async (err) => {
 
     if (err) {
       console.error("Error from multer: ", err)
@@ -128,28 +133,36 @@ export async function updateEvent(req, res){
       oldFilePath = null;
     }
 
+    const {pathToSave, newFilePaths, compressionDone} = await compressAndResize(req.file, 50)
+    
     if (req.file) {
-      event.coverImageUrl = req.file.mimetype+":"+req.file.path;
+      removeFile(req.file.path); // Remove the original file to only save the compressed.
     }
 
-    getRepository(Event).save(event)
-    .then(response => {
-      if (req.file) {
-        resizeAndCompress(req.file.path, 50);
-        removeAllFiles(oldFilePath);
-      }
-      return res.status(200).send(response)
-    })
-    .catch(error => {
-      if (req.file) {
-        removeAllFiles(req.file.path);
-      }
-      console.error("Error while updating event:", error);
-      return res.status(500).send({
-        type: error.name,
-        message: `Could not update event ${event.id}.`,
+    if (pathToSave) {
+      event.coverImageUrl = pathToSave;
+    }
+    if (compressionDone) {
+      getRepository(Event).save(event)
+      .then(response => {
+        if (req.file && oldFilePath) {
+            removeAllFiles([oldFilePath, oldFilePath.replace(ImageType.COMPRESSED, ImageType.MINIATURE)]);
+        }
+        return res.status(200).send(response)
       })
-    })
+      .catch(error => {
+        if (req.file) {
+          removeAllFiles(newFilePaths);
+        }
+        console.error("Error while updating event:", error);
+        return res.status(500).send({
+          type: error.name,
+          message: `Could not update event ${event.id}.`,
+        })
+      })
+    } else {
+      return res.status(400).send({message: "Could not upload image."})
+    }
   })
 }
 
@@ -310,10 +323,10 @@ export async function deleteEvent(req, res){
   getRepository(Activity).remove(event.activities)
   .then(response => {
     event.activities.map(activity => {
-      removeAllFiles(activity.coverImageUrl)});
+      removeAllFiles([activity.coverImageUrl, activity.coverImageUrl.replace(ImageType.COMPRESSED, ImageType.MINIATURE)])});
       getRepository(Event).remove(event)
       .then(response2 => {
-        removeAllFiles(coverImage);
+        removeAllFiles([coverImage, coverImage.replace(ImageType.COMPRESSED, ImageType.MINIATURE)]);
         return res.status(204).send();
       })
       .catch(error2 => {
@@ -396,7 +409,7 @@ export async function deleteCoverImage(req, res) {
     const filePath = event.coverImageUrl.split(":")[1];
     event.coverImageUrl = null;
     getRepository(Event).save(event).then(event => {
-      removeAllFiles(filePath)
+      removeAllFiles([filePath, filePath.replace(ImageType.COMPRESSED, ImageType.MINIATURE)])
       return res.status(204).send();
     }).catch(error => {
       console.error("Error while saving event with no image: ", error)

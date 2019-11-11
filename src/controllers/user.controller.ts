@@ -16,7 +16,8 @@ import {
   getDataUrl,
   removeAllFiles, 
   ImageType, 
-  resizeAndCompress} from '../modules/fileHelpers';
+  resizeAndCompress,
+  compressAndResize} from '../modules/fileHelpers';
 
 // Get storage for multer
 const storage = getStorage("public/original", "profileImage")
@@ -101,13 +102,11 @@ export async function getUserById(req, res) {
 }
 
 export async function updateUser(req, res) {
-
   let userToUpdate = await getRepository(User).findOne({ id: req.params.userId });
 
   if (!userToUpdate) {
     return res.status(404).send({ message: "No user exists for the provided id." })
   }
-  console.time("Multer time:")
   uploadFile(storage, req, res, async (err) => {
     // Check for any faults with the image upload.
 
@@ -119,7 +118,7 @@ export async function updateUser(req, res) {
         error: err
       });
     }
-    console.timeEnd("Multer time:")
+
     const [inputValid, errorInfo] = validateUser(req.body);
   
     if (!inputValid) {
@@ -140,40 +139,36 @@ export async function updateUser(req, res) {
     userToUpdate.aboutMe = req.body.aboutMe === "null"? null: req.body.aboutMe; // Multer (probably) turns null values into string "null"
     userToUpdate.allergiesOrPreferences = req.body.allergiesOrPreferences === "null"? null: req.body.allergiesOrPreferences;
     
-    let oldFilePath;  // Save the old image path so it can be deleted if the update is successfull
+    let oldFilePath: string;  // Save the old image path so it can be deleted if the update is successfull
+
     if (userToUpdate.profileImageUrl){
       oldFilePath = userToUpdate.profileImageUrl.split(":")[1];
     } else {
       oldFilePath = null
     }
-    let compressionDone;
 
-    if (req.file){
-      compressionDone = await resizeAndCompress(req.file.path, 40).then(compressedPath => {
-        userToUpdate.profileImageUrl = req.file.mimetype+":"+compressedPath;
-        removeFile(req.file.path);
-        return true;
-      }).catch(error => {
-        console.error("Error during image compression: ", error)
-        return false;
-      })
-      console.log("Compression done: ", compressionDone);
-    } else {
-      compressionDone = true;
+    const {pathToSave, newFilePaths, compressionDone} = await compressAndResize(req.file, 40)
+    
+    if (req.file) {
+      removeFile(req.file.path); // Remove the original file to only save the compressed.
+    }
+    if (pathToSave) {
+      userToUpdate.profileImageUrl = pathToSave;
     }
 
     if (compressionDone) {
       getRepository(User).save(userToUpdate)
       .then(response => {
-        if (req.file){  // Only remove old file if there is a new file
-          removeAllFiles(oldFilePath);
+        if (req.file && oldFilePath){  // Only remove old files if there is a new file
+          removeAllFiles([oldFilePath, 
+            oldFilePath.replace(ImageType.COMPRESSED, ImageType.MINIATURE)]);
         }
         res.status(200).send(response);
         return
         })
         .catch(error => {
           if (req.file) {
-            removeAllFiles(req.file.path);
+            removeAllFiles(newFilePaths);
           }
           console.error("Error while updating user:", error);
           return res.status(500).send({ message: "Could not update user." });
@@ -181,11 +176,10 @@ export async function updateUser(req, res) {
     } else {
       res.status(400).send({message: "Could not upload image."})
       if (req.file){
-        removeAllFiles(req.file.path);
+        removeAllFiles(newFilePaths);
       }
       return;
     }
-
   })
 }
 
@@ -197,7 +191,7 @@ export async function deleteUser(req, res) {
 
   await getRepository(User).remove(user)
     .then(response => {
-      removeAllFiles(user.profileImageUrl);
+      removeAllFiles([user.profileImageUrl, user.profileImageUrl.replace(ImageType.COMPRESSED, ImageType.MINIATURE)]);
       return res.status(204).send();
     })
     .catch(error => {
@@ -328,7 +322,7 @@ export async function firstUpdate(req, res) {
     }
 
     getRepository(User).findOne({ id: userId })
-      .then(user => {
+      .then(async user => {
         if (user.signupComplete) {
           if (req.file) {
             removeFile(req.file.path);
@@ -360,20 +354,38 @@ export async function firstUpdate(req, res) {
         user.companyDepartment = req.body.companyDepartment;
         user.signupComplete = true;
         user.password = bCrypt.hashSync(req.body.password, parseInt(process.env.SALT_ROUNDS, 10));
-        if (req.file){
-          user.profileImageUrl = req.file.mimetype+":"+req.file.path;
+        
+        const {pathToSave, newFilePaths, compressionDone} = await compressAndResize(req.file, 40)
+        
+        if (req.file) {
+          removeFile(req.file.path); // Remove the original file to only save the compressed.
+        }
+
+        if (pathToSave) {
+          user.profileImageUrl = pathToSave;
         }
         
-        getRepository(User).save(user).then(response => {
-          response.password = undefined;
-          resizeAndCompress(req.file.path, 40)
-          res.status(200).send(response);
-        });
+        if (compressionDone) {
+          getRepository(User).save(user).then(response => {
+            response.password = undefined;
+            res.status(200).send(response);
+          })
+          .catch(error => {
+            console.error("Error while saving user updates: ", error);
+            removeAllFiles(newFilePaths);
+            res.status(500).send({message: "Could not update user."})
+          });
+        } else {
+          res.status(400).send({message: "Could not upload the image."})
+          removeAllFiles(newFilePaths);
+          return
+        }
       })
       .catch(error => {
         if (req.file){
-          removeAllFiles(req.file.path)
+          removeFile(req.file.path);
         }
+        console.error("Error while updating user for the first time: ", error)
         if (error.response) {
           return res.status(error.response.status).send(error.response.data);
         } else if (error.request) {
@@ -421,7 +433,7 @@ export async function deleteProfileImage(req, res) {
     const filePath = user.profileImageUrl.split(":")[1];
     user.profileImageUrl = null;
     getRepository(User).save(user).then(user => {
-      removeAllFiles(filePath)
+      removeAllFiles([filePath, filePath.replace(ImageType.COMPRESSED, ImageType.MINIATURE)])
       return res.status(204).send();
     }).catch(error => {
       console.error("Error while saving user with no image: ", error)
