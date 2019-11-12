@@ -9,6 +9,10 @@ function setUpActivityRoutes(app) {
     isAuthenticated(req, res, next);
   })
 
+  app.use('/v1/activities', (req, res, next) => {
+    isAuthenticated(req, res, next);
+  })
+
   /**
   * @api {get} /activities Get all activities.
   * @apiName GetActivites
@@ -61,6 +65,30 @@ function setUpActivityRoutes(app) {
      })
    });
  })
+
+ // Add pagination
+ /**
+ * @api {get} v1/activities/:activityId/users Fetch all users on a specific activity.
+ * Query params: sort=column:order, offset=pagination offset (number), limit=limit of number of records returned (number)
+ * Example: /v1/activities/:activityId/users?sort=firstName:asc&offset=3&limit=10
+ * @apiDescription Fetch all users for an activity. 
+ * 
+ * Specify sort order by /events/:eventId/users?sort=firstName:asc
+ * @apiName GetActivityParticipantsV1
+ * @apiGroup Activity
+ * 
+ * @apiParam {number} activityId The unique identifier of the activity
+ */
+
+app.get('/v1/activities/:activityId/users', (req: express.Request, res: express.Response) => {
+  activityController.getActivityUsersV1(req, res).catch(error => {
+    console.error("Error in getActivityUsers: ", error);
+    res.status(500).send({
+      type: error.name,
+      message: "Could not fetch activity participants"
+    })
+  });
+})
 
 
 

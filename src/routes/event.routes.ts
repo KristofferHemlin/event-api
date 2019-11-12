@@ -10,6 +10,10 @@ function setUpEventRoutes(app) {
     isAuthenticated(req, res, next);
   })
 
+  app.use('v1/events', (req, res, next) => {
+    isAuthenticated(req, res, next);
+  })
+
   /**
    * @api {get} Fetch event by its id
    * @apiName GetEventById
@@ -123,6 +127,26 @@ function setUpEventRoutes(app) {
       })
     })
   });
+
+  // New version that implements pagination
+  /**
+   * @api {get} /v1/events/:eventId/users
+   * @apiDescription This route fetches all user for the specified event. 
+   * Query params: sort=column:order, offset=pagination offset (number), limit=limit of number of records returned (number)
+   * Example: /v1/events/:eventId/users?sort=firstName:asc&offset=3&limit=10
+   * @apiName GetEventParticipantsV1
+   * @apiGroup Event
+   * @apiParam {Number} eventId Unique identifier for the event
+   */
+  app.get("/v1/events/:eventId/users", (req, res) => {
+    eventController.getEventParticipantsV1(req, res).catch(error => {
+      console.error("Error in getEventParticipants:", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Error while fetching event participants"
+      })
+    })
+  })
 
   /**
   * @api {get} /events/:eventId/users/:userId
