@@ -113,7 +113,11 @@ export async function updateUser(req, res) {
     if (err) {
       console.error("Error while processing form data:", err)
       const errorMessage = handleMulterError(err);
+<<<<<<< HEAD
       return res.status(400).send(errorMessage)
+=======
+      return res.status(500).send(errorMessage)
+>>>>>>> ff38ad7cdfd1cdb5dbc66f5fbd4b26d01bb5be09
     }
 
     const [inputValid, errorMessage, errorDetails] = validateUser(req.body);
@@ -313,7 +317,11 @@ export async function firstUpdate(req, res) {
     if (err) {
       console.error("Error while processing form data:", err)
       const errorMessage = handleMulterError(err);
+<<<<<<< HEAD
       return res.status(400).send(errorMessage)
+=======
+      return res.status(500).send(errorMessage)
+>>>>>>> ff38ad7cdfd1cdb5dbc66f5fbd4b26d01bb5be09
     }
 
     getRepository(User).findOne({ id: userId })

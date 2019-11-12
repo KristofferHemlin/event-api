@@ -12,11 +12,19 @@ const storage = getStorage("public/original", "eventImage");
 export async function createEvent(req, res) {
   
   uploadFile(storage, req, res, async (err) => {
+<<<<<<< HEAD
 
     if (err) {
       console.error("Error from multer: ", err)
       const errorMessage = handleMulterError(err);
       return res.status(400).send(errorMessage)
+=======
+    
+    if (err) {
+      console.error("Error from multer: ", err)
+      const errorMessage = handleMulterError(err);
+      return res.status(500).send(errorMessage)
+>>>>>>> ff38ad7cdfd1cdb5dbc66f5fbd4b26d01bb5be09
     }
 
     let company = await getRepository(Company).findOne({ id: req.body.companyId });
@@ -103,7 +111,11 @@ export async function updateEvent(req, res){
     if (err) {
       console.error("Error from multer: ", err)
       const errorMessage = handleMulterError(err);
+<<<<<<< HEAD
       return res.status(400).send(errorMessage)
+=======
+      return res.status(500).send(errorMessage)
+>>>>>>> ff38ad7cdfd1cdb5dbc66f5fbd4b26d01bb5be09
     }
 
     const [inputValid, errorMessage, errorDetails] = validateEvent(req.body);

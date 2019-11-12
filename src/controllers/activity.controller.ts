@@ -16,7 +16,11 @@ export async function createActivity(req, res) {
     if (err) {
       console.error("Error in multer: ", err);
       const errorMessage = handleMulterError(err);
+<<<<<<< HEAD
       return res.status(400).send(errorMessage)
+=======
+      return res.status(500).send(errorMessage)
+>>>>>>> ff38ad7cdfd1cdb5dbc66f5fbd4b26d01bb5be09
     }
     
     const eventId = req.body.eventId;
@@ -252,7 +256,7 @@ export async function updateActivity(req, res) {
   }
 
   uploadFile(storage, req, res, async (err) => {
-
+    
     if (err) {
       console.error("Error in multer: ", err);
       const errorMessage = handleMulterError(err);
