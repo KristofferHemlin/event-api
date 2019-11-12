@@ -45,6 +45,7 @@ function setUpActivityRoutes(app) {
 
 /**
  * @api {get} /activities/:activityId/users Fetch all users on a specific activity.
+ * @apiDescription Fetch all users for an activity. Specify sort order by /events/:eventId/users?sort=firstName:asc
  * @apiName GetActivityParticipants
  * @apiGroup Activity
  * 

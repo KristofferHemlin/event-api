@@ -6,9 +6,9 @@ function setUpEventRoutes(app) {
 
 
   // Middleware
-  app.use('/events', (req, res, next) => {
-    isAuthenticated(req, res, next);
-  })
+  // app.use('/events', (req, res, next) => {
+  //   isAuthenticated(req, res, next);
+  // })
 
   /**
    * @api {get} Fetch event by its id
@@ -107,7 +107,7 @@ function setUpEventRoutes(app) {
 
   /**
    * @api {get} /events/:eventId/users
-   * @apiDescription This route fetches all user for the specified event. 
+   * @apiDescription This route fetches all user for the specified event. Specify sort order by /events/:eventId/users?sort=firstName:asc
    * @apiName GetEventParticipants
    * @apiGroup Event
    * @apiParam {Number} eventId Unique identifier for the event
