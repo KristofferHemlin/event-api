@@ -138,14 +138,14 @@ function createErrorMessage(detailedMessage) {
     if (messageFields.length > 1) {        
         const lastField = messageFields.pop();
         const firstField = messageFields.pop();
-        let messageStart = prettyFields[firstField];    
+        let messageStart = "The "+prettyFields[firstField];    
         message = messageFields.reduce((message, field) => {
             return message + ", "+ prettyFields[field]
         }, messageStart)
-        message += " and "+prettyFields[lastField] + " are wrong"
+        message += " and "+prettyFields[lastField] + " fields are wrong"
 
     } else if (messageFields.length === 1) {
-        message = prettyFields[messageFields[0]]+ " is wrong"
+        message = "The "+prettyFields[messageFields[0]]+ " field is wrong"
     } else {
         message = ""
     }
