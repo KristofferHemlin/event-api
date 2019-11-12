@@ -77,31 +77,15 @@ export function getDataUrl(imageUrl, imageType?: ImageType) {
   return imageUrl;
 }
 
-// export async function compressAndResizeImage(filePath) {
-//   // This does not work properly for png, the image size is larger in the resized and compressed version.
-//   compressImage(filePath, 50, "public/compressed")
-//     .then(compressedPath => {
-//       const outputPath = filePath.replace(ImageType.ORIGINAL, ImageType.MINIATURE)
-//       resizeImage(compressedPath, outputPath, 200);
-//     })
-//     .catch(error => {
-//       console.error("Error during compression and resizing of image: ", error);
-//     });  
-// }
-
 export async function resizeAndCompress(filePath, compressQuality) {
   const outputPath = filePath.replace(ImageType.ORIGINAL, ImageType.MINIATURE)
-  console.time("CompressTime");
   const result = await compressImage(filePath, compressQuality, "public/"+ImageType.COMPRESSED)
-  console.timeEnd("CompressTime");
   const compressOutputpath = filePath.replace("original", ImageType.COMPRESSED);
   
   // Need to wait here, otherwhise the file won't have time to be saved before trying to get fetched.
-  console.time("Miniature time");
   await resizeImage(filePath, outputPath, 200).then(data => {
     return compressImage(outputPath, 60, "public/"+ImageType.MINIATURE)
   });
-  console.timeEnd("Miniature time");
   return compressOutputpath;
 
 }

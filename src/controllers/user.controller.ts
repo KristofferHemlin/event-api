@@ -330,7 +330,7 @@ export async function firstUpdate(req, res) {
         const input = trimInput(req.body);
 
         const [pwdValid, errorMessagePwd] = validatePassword(newPwd, "password");
-        const [inputValid, errorMessageUser, errorDetailsUser] = validateUser(req.body);
+        const [inputValid, errorMessageUser, errorDetailsUser] = validateUser(input);
 
         const errorDetails = errorDetailsUser;
         errorDetails["password"] = errorMessagePwd;
@@ -346,13 +346,13 @@ export async function firstUpdate(req, res) {
           return;
         }
 
-        user.firstName = req.body.firstName;
-        user.lastName = req.body.lastName;
-        user.email = req.body.email;
-        user.phone = req.body.phone;
-        user.companyDepartment = req.body.companyDepartment;
+        user.firstName = input.firstName;
+        user.lastName = input.lastName;
+        user.email = input.email;
+        user.phone = input.phone;
+        user.companyDepartment = input.companyDepartment;
         user.signupComplete = true;
-        user.password = bCrypt.hashSync(req.body.password, parseInt(process.env.SALT_ROUNDS, 10));
+        user.password = bCrypt.hashSync(input.password, parseInt(process.env.SALT_ROUNDS, 10));
         
         const {pathToSave, newFilePaths, compressionDone} = await compressAndResize(req.file, 40)
         

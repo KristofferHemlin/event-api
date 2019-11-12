@@ -6,6 +6,7 @@ import Activity from '../entities/activity.entity';
 
 import {validateEvent} from '../modules/validation';
 import { getStorage, uploadFile, removeFile, getDataUrl, resizeAndCompress, ImageType, removeAllFiles, compressAndResize, handleMulterError } from "../modules/fileHelpers";
+import { trimInput } from "../modules/helpers";
 
 const storage = getStorage("public/original", "eventImage");
 
@@ -29,8 +30,9 @@ export async function createEvent(req, res) {
         message: 'No company was found with the provided company id.',
       });
     }
-  
-    const [inputValid, errorMessage, errorDetails] = validateEvent(req.body);
+    
+    const input = trimInput(req.body);
+    const [inputValid, errorMessage, errorDetails] = validateEvent(input);
   
     if (!inputValid) {
       if (req.file) {
@@ -43,13 +45,13 @@ export async function createEvent(req, res) {
     }
   
     const event = new Event();
-    event.title = req.body.title;
-    event.description = req.body.description;
+    event.title = input.title;
+    event.description = input.description === "null"? null: input.description;
     event.company = company;
-    event.startTime = req.body.startTime;
-    event.endTime = req.body.endTime;
-    event.location = req.body.location;
-    event.goodToKnow = req.body.goodToKnow;
+    event.startTime = input.startTime;
+    event.endTime = input.endTime;
+    event.location = input.location;
+    event.goodToKnow = input.goodToKnow === "null"? null: input.goodToKnow;
 
     const {pathToSave, newFilePaths, compressionDone} = await compressAndResize(req.file, 50)
     
@@ -106,7 +108,8 @@ export async function updateEvent(req, res){
       return res.status(400).send(errorMessage)
     }
 
-    const [inputValid, errorMessage, errorDetails] = validateEvent(req.body);
+    const input = trimInput(req.body);
+    const [inputValid, errorMessage, errorDetails] = validateEvent(input);
   
     if (!inputValid) {
       if (req.file) {
@@ -117,12 +120,12 @@ export async function updateEvent(req, res){
         details: errorDetails})
       return;
     }
-    event.title = req.body.title;
-    event.description = req.body.description === "null"? null: req.body.description;
-    event.startTime = req.body.startTime;
-    event.endTime = req.body.endTime;
-    event.location = req.body.location;
-    event.goodToKnow = req.body.goodToKnow === "null"? null: req.body.goodToKnow;
+    event.title = input.title;
+    event.description = input.description === "null"? null: input.description;
+    event.startTime = input.startTime;
+    event.endTime = input.endTime;
+    event.location = input.location;
+    event.goodToKnow = input.goodToKnow === "null"? null: input.goodToKnow;
     
     let oldFilePath;
     if (event.coverImageUrl) {

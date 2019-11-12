@@ -6,6 +6,7 @@ import ActivityUpdateLog from '../entities/activitylog.entity';
 import {validateActivity} from '../modules/validation';
 import PlayerId from '../entities/playerId.entity';
 import { getStorage, uploadFile, removeFile, getDataUrl, ImageType, removeAllFiles, compressAndResize, handleMulterError } from '../modules/fileHelpers';
+import { trimInput } from '../modules/helpers';
 
 const storage = getStorage("public/original", "activityImage")
 
@@ -38,8 +39,9 @@ export async function createActivity(req, res) {
         message: 'No event could be found for the provided id. Activity not created.',
       })
     }
-  
-    const [inputValid, errorMessage, errorInfo] = validateActivity(req.body)
+    
+    const input = trimInput(req.body);
+    const [inputValid, errorMessage, errorInfo] = validateActivity(input)
   
     if (!inputValid) {
       if (req.file) {
@@ -52,14 +54,14 @@ export async function createActivity(req, res) {
     }
   
     const activity = new Activity();
-    activity.title = req.body.title;
-    activity.description = req.body.description;
+    activity.title = input.title;
+    activity.description = input.description === "null"? null: input.description;
     activity.event = event;
     activity.company = event.company;
-    activity.startTime = req.body.startTime;
-    activity.endTime = req.body.endTime;
-    activity.location = req.body.location;
-    activity.goodToKnow = req.body.goodToKnow;
+    activity.startTime = input.startTime;
+    activity.endTime = input.endTime;
+    activity.location = input.location;
+    activity.goodToKnow = input.goodToKnow === "null"? null: input.goodToKnow;
 
     const {pathToSave, newFilePaths, compressionDone} = await compressAndResize(req.file, 50)
     
@@ -259,7 +261,8 @@ export async function updateActivity(req, res) {
       return res.status(400).send(errorMessage)
     }
 
-    const [inputValid, errorMessage, errorInfo] = validateActivity(req.body);
+    const input = trimInput(req.body);
+    const [inputValid, errorMessage, errorInfo] = validateActivity(input);
   
     if (!inputValid) {
       if (req.file) {
@@ -271,12 +274,12 @@ export async function updateActivity(req, res) {
       return;
     }
   
-    activity.title = req.body.title;
-    activity.description = req.body.description;
-    activity.startTime = req.body.startTime;
-    activity.endTime = req.body.endTime;
-    activity.location = req.body.location;
-    activity.goodToKnow = req.body.goodToKnow;
+    activity.title = input.title;
+    activity.description = input.description === "null"? null: input.description;
+    activity.startTime = input.startTime;
+    activity.endTime = input.endTime;
+    activity.location = input.location;
+    activity.goodToKnow = input.goodToKnow === "null"? null: input.goodToKnow;
 
     let oldFileUrl;
     if (activity.coverImageUrl) {
