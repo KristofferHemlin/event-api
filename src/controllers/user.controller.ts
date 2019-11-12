@@ -16,7 +16,7 @@ import {
   getDataUrl,
   removeAllFiles, 
   ImageType, 
-  resizeAndCompress,
+  handleMulterError,
   compressAndResize} from '../modules/fileHelpers';
 
 // Get storage for multer
@@ -112,18 +112,7 @@ export async function updateUser(req, res) {
 
     if (err) {
       console.error("Error while processing form data:", err)
-      let errorMessage;
-      if (err.code === "LIMIT_FILE_SIZE") {
-        errorMessage = {
-          type: err.name,
-          message: "Image size too large, must be smaller than 10 MB"
-        }
-      } else {
-        errorMessage = {
-          type: err.name,
-          message: "Could not parse form data"
-        }
-      }
+      const errorMessage = handleMulterError(err);
       return res.status(500).send(errorMessage)
     }
 
@@ -323,18 +312,7 @@ export async function firstUpdate(req, res) {
     // Check for any faults with the image upload.
     if (err) {
       console.error("Error while processing form data:", err)
-      let errorMessage;
-      if (err.code === "LIMIT_FILE_SIZE") {
-        errorMessage = {
-          type: err.name,
-          message: "Image size too large, must be smaller than 10 MB"
-        }
-      } else {
-        errorMessage = {
-          type: err.name,
-          message: "Could not parse form data"
-        }
-      }
+      const errorMessage = handleMulterError(err);
       return res.status(500).send(errorMessage)
     }
 

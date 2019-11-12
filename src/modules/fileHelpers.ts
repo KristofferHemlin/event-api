@@ -1,7 +1,8 @@
 import * as multer from 'multer';
 import * as fs from 'fs';
 
-const accepted_extensions = ['jpg', 'jpeg', 'png', 'heic', 'JPG', 'JPEG', 'PNG', 'HEIC'];
+const accepted_extensions = ['jpg', 'jpeg', 'png', 'heic'];
+const maxFileSize = 10;
 
 // Enum to specify image type
 export enum ImageType {"ORIGINAL"="original", "COMPRESSED"="compressed", "MINIATURE"="miniature"}
@@ -23,17 +24,16 @@ export function uploadFile(storage, req, res, callback){
   multer({
       storage: storage,
       limits: {
-        fileSize: 10 * 1024 * 1024,
+        fileSize: maxFileSize * 1024 * 1024,
         file: 1,
       },
       fileFilter: (req, file, cb) => {
         // if the file extension is in our accepted list
-        if (accepted_extensions.some(ext => file.originalname.endsWith("." + ext))) {
+        if (accepted_extensions.some(ext => file.originalname.toLowerCase().endsWith("." + ext))) {
           return cb(null, true);
         }
     
         // otherwise, return error
-        console.log("FIL: ",file);
         return cb({ message: 'Only ' + accepted_extensions.join(", ") + ' files are allowed!' })
       }
   }).single('image')(req, res, callback)
@@ -169,4 +169,25 @@ export async function compressAndResize(file, compressQuality=50) {
     pathToSave = null;
   }
   return {newFilePaths, compressionDone, pathToSave}
+}
+
+export function handleMulterError(error) {
+  let errorMessage;
+  if (error.code === "LIMIT_FILE_SIZE") {
+    errorMessage = {
+      type: error.name,
+      message: `Image size too large, must be smaller than ${maxFileSize} MB`
+    }
+  } else if (error.message) {
+    errorMessage = {
+      type: error.name,
+      message: error.message
+    }
+  } else {
+    errorMessage = {
+      type: error.name,
+      message: "Could not parse form data"
+    }
+  }
+  return errorMessage;
 }
