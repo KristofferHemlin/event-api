@@ -5,7 +5,7 @@ import User from '../entities/user.entity';
 import ActivityUpdateLog from '../entities/activitylog.entity';
 import {validateActivity} from '../modules/validation';
 import PlayerId from '../entities/playerId.entity';
-import { getStorage, uploadFile, removeFile, getDataUrl, ImageType, removeAllFiles, compressAndResize } from '../modules/fileHelpers';
+import { getStorage, uploadFile, removeFile, getDataUrl, ImageType, removeAllFiles, compressAndResize, handleMulterError } from '../modules/fileHelpers';
 
 const storage = getStorage("public/original", "activityImage")
 
@@ -15,19 +15,8 @@ export async function createActivity(req, res) {
     
     if (err) {
       console.error("Error in multer: ", err);
-      let errorMessage;
-      if (err.code === "LIMIT_FILE_SIZE") {
-        errorMessage = {
-          type: err.name,
-          message: "Image size too large, must be smaller than 10 MB"
-        }
-      } else {
-        errorMessage = {
-          type: err.name,
-          message: "Could not parse form data"
-        }
-      }
-      return res.status(500).send(errorMessage)
+      const errorMessage = handleMulterError(err);
+      return res.status(400).send(errorMessage)
     }
     
     const eventId = req.body.eventId;
@@ -266,19 +255,8 @@ export async function updateActivity(req, res) {
 
     if (err) {
       console.error("Error in multer: ", err);
-      let errorMessage;
-      if (err.code === "LIMIT_FILE_SIZE") {
-        errorMessage = {
-          type: err.name,
-          message: "Image size too large, must be smaller than 10 MB"
-        }
-      } else {
-        errorMessage = {
-          type: err.name,
-          message: "Could not parse form data"
-        }
-      }
-      return res.status(500).send(errorMessage)
+      const errorMessage = handleMulterError(err);
+      return res.status(400).send(errorMessage)
     }
 
     const [inputValid, errorMessage, errorInfo] = validateActivity(req.body);
