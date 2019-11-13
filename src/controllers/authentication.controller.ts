@@ -7,7 +7,7 @@ import Company from '../entities/company.entity';
 import User from '../entities/user.entity';
 import Role from '../entities/role.entity';
 
-import * as mail from '../modules/email';
+import {sendMail, resetPasswordTemplate} from '../modules/email';
 import { validatePassword } from '../modules/validation';
 import {processFormDataNoFile} from '../modules/fileHelpers';
 
@@ -258,20 +258,20 @@ export async function sendResetPasswordEmail(req, res) {
 
         getRepository(User).save(user).then( usr => {
           const url = process.env.API_URL+"/deeplink/"+token;
-          const emailTemplate = mail.resetPasswordTemplate(user, url);
-          
-          mail.transporter.sendMail(emailTemplate, (err, info) => {
-            if (err) {
-              console.error("Error while trying to send email: "+err);
+          const message = resetPasswordTemplate(user, url);
+          sendMail(message)
+            .then(_ => {
+              return res.status(200).send({message: "Email sent"});
+            })
+            .catch(error => {
+              console.error("Error while trying to send email: "+ error);
               return res.status(500).send({message: "Error while sending email"})
-            }
-            return res.status(200).send({message: "Email sent"})
+            });
           })
-        })
-        .catch(error => {
-          console.error("Error while updating user: ", error)
-          return res.status(500).send({message: "Error while processing the request."})
-        })
+          .catch(error => {
+            console.error("Error while updating user: ", error)
+            return res.status(500).send({message: "Error while processing the request."})
+          })
       } else {
           return res.status(400).send({message: "Email not registered"});
       }
