@@ -6,7 +6,7 @@ import ActivityUpdateLog from '../entities/activitylog.entity';
 import {validateActivity} from '../modules/validation';
 import PlayerId from '../entities/playerId.entity';
 import { getStorage, uploadFile, removeFile, getDataUrl, ImageType, removeAllFiles, compressAndResize, handleMulterError } from '../modules/fileHelpers';
-import { trimInput, getPagingResponseMessage } from '../modules/helpers';
+import { trimInput, getPagingResponseMessage, getSortingParams } from '../modules/helpers';
 
 const storage = getStorage("public/original", "activityImage")
 
@@ -132,13 +132,8 @@ export async function getActivityUsers(req, res) {
 
   const sortableColumns = ["id", "firstName", "lastName", "companyDepartment"];
   const sortableOrder = ["ASC", "DESC"];
-  const sortParams = req.query.sort;
-  let column, order;
-  if (sortParams) {
-    [column, order] = sortParams.split(":");
-  } else {
-    [column, order] = ["id", "ASC"];  
-  }
+  
+  const [column, order] = getSortingParams(req);
 
   if (!sortableColumns.includes(column) || !sortableOrder.includes(order.toUpperCase())){
     return res.status(400).send({message: "Specified column or order to sort by is wrong."});
@@ -165,17 +160,12 @@ export async function getActivityUsersV1(req, res) {
 
   const sortableColumns = ["id", "firstName", "lastName", "companyDepartment"];
   const sortableOrder = ["ASC", "DESC"];
-  const sortParams = req.query.sort;
+  
   const pageLimit = req.query.limit? parseInt(req.query.limit): 20;
   const pageOffset = req.query.offset? parseInt(req.query.offset): 0;
   const reqPath = req.url;
 
-  let column, order;
-  if (sortParams) {
-    [column, order] = sortParams.split(":");
-  } else {
-    [column, order] = ["id", "ASC"];  
-  }
+  const [column, order] = getSortingParams(req);
 
   if (!sortableColumns.includes(column) || !sortableOrder.includes(order.toUpperCase())){
     return res.status(400).send({message: "Specified column or order to sort by is wrong."});

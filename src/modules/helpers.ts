@@ -34,3 +34,18 @@ export function getPagingResponseMessage(records: User[], totalRecords: number, 
     }
       
 }
+
+export function getSortingParams(request) {
+    const sortParams = request.query.sort;
+    let column, order;
+    if (sortParams) {
+    [column, order] = sortParams.split(":");
+    if (!order){
+      order = "ASC";
+    }
+  } else {
+    [column, order] = ["id", "ASC"];  
+  }
+
+  return [column, order]
+}

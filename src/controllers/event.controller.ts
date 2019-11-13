@@ -6,7 +6,7 @@ import Activity from '../entities/activity.entity';
 
 import {validateEvent} from '../modules/validation';
 import { getStorage, uploadFile, removeFile, getDataUrl, resizeAndCompress, ImageType, removeAllFiles, compressAndResize, handleMulterError } from "../modules/fileHelpers";
-import { trimInput, getPagingResponseMessage } from "../modules/helpers";
+import { trimInput, getPagingResponseMessage, getSortingParams } from "../modules/helpers";
 
 const storage = getStorage("public/original", "eventImage");
 
@@ -187,17 +187,7 @@ export async function getEventParticipants(req, res) {
 
   const sortableColumns = ["id", "firstName", "lastName", "companyDepartment"];
   const sortableOrder = ["ASC", "DESC"];
-  const sortParams = req.query.sort;
-
-  let column, order;
-  if (sortParams) {
-    [column, order] = sortParams.split(":");
-    if (!order){
-      order = "ASC";
-    }
-  } else {
-    [column, order] = ["id", "ASC"];  
-  }
+  const [column, order] = getSortingParams(req);
 
   if (!sortableColumns.includes(column) || !sortableOrder.includes(order.toUpperCase())){
     return res.status(400).send(
@@ -229,20 +219,13 @@ export async function getEventParticipantsV1(req, res) {
 
     const sortableColumns = ["id", "firstName", "lastName", "companyDepartment"];
     const sortableOrder = ["ASC", "DESC"];
-    const sortParams = req.query.sort;
+    
     const pageLimit = req.query.limit? parseInt(req.query.limit): 20;
     const pageOffset = req.query.offset? parseInt(req.query.offset): 0;
     const reqPath = req.url;
-  
-    let column, order;
-    if (sortParams) {
-      [column, order] = sortParams.split(":");
-      if (!order){
-        order = "ASC";
-      }
-    } else {
-      [column, order] = ["id", "ASC"];  
-    }  
+    
+    const [column, order] = getSortingParams(req);
+
     if (!sortableColumns.includes(column) || !sortableOrder.includes(order.toUpperCase())){
       return res.status(400).send(
         {message: `Specified column or order to sort by is wrong.`});
