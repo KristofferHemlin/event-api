@@ -253,8 +253,13 @@ export async function getCurrentEvent(req, res) {
     .getMany()
     .then(
       events => {
-        const currentEvent = events[0];
-        currentEvent.coverImageUrl = getDataUrl(currentEvent.coverImageUrl, ImageType.COMPRESSED);
+        let currentEvent;
+        if (events.length > 0) {
+          currentEvent = events[0];
+          currentEvent.coverImageUrl = getDataUrl(currentEvent.coverImageUrl, ImageType.COMPRESSED);
+        } else {
+          currentEvent = {}
+        }
         return res.status(200).send(currentEvent);
       },
       error => {
