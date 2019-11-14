@@ -6,9 +6,11 @@ import ActivityUpdateLog from '../entities/activitylog.entity';
 import {validateActivity} from '../modules/validation';
 import PlayerId from '../entities/playerId.entity';
 import { getStorage, uploadFile, removeFile, getDataUrl, ImageType, removeAllFiles, compressAndResize, handleMulterError } from '../modules/fileHelpers';
-import { trimInput, getPagingResponseMessage, getSortingParams, fetchParticipantBuilder } from '../modules/helpers';
+import { cleanInput, getPagingResponseMessage, getSortingParams, fetchParticipantBuilder, updateEntityFields } from '../modules/helpers';
 
 const storage = getStorage("public/original", "activityImage")
+
+const possibleInputFields = ["title", "description", "startTime", "endTime", "location", "goodToKnow"];
 
 export async function createActivity(req, res) {
   
@@ -40,7 +42,7 @@ export async function createActivity(req, res) {
       })
     }
     
-    const input = trimInput(req.body);
+    const input = cleanInput(req.body);
     const [inputValid, errorMessage, errorInfo] = validateActivity(input)
   
     if (!inputValid) {
@@ -52,16 +54,10 @@ export async function createActivity(req, res) {
         details: errorInfo})
       return;
     }
-  
-    const activity = new Activity();
-    activity.title = input.title;
-    activity.description = input.description === "null"? null: input.description;
+    
+    const activity = updateEntityFields(new Activity(), input, possibleInputFields);
     activity.event = event;
     activity.company = event.company;
-    activity.startTime = input.startTime;
-    activity.endTime = input.endTime;
-    activity.location = input.location;
-    activity.goodToKnow = input.goodToKnow === "null"? null: input.goodToKnow;
 
     const {pathToSave, newFilePaths, compressionDone} = await compressAndResize(req.file, 50)
     
@@ -300,7 +296,7 @@ export async function updateActivity(req, res) {
       return res.status(400).send(errorMessage)
     }
 
-    const input = trimInput(req.body);
+    const input = cleanInput(req.body);
     const [inputValid, errorMessage, errorInfo] = validateActivity(input);
   
     if (!inputValid) {
@@ -312,14 +308,9 @@ export async function updateActivity(req, res) {
         details: errorInfo})
       return;
     }
-  
-    activity.title = input.title;
-    activity.description = input.description === "null"? null: input.description;
-    activity.startTime = input.startTime;
-    activity.endTime = input.endTime;
-    activity.location = input.location;
-    activity.goodToKnow = input.goodToKnow === "null"? null: input.goodToKnow;
 
+    const updatedActivity = updateEntityFields(activity, input, possibleInputFields);
+  
     let oldFileUrl;
     if (activity.coverImageUrl) {
       oldFileUrl = activity.coverImageUrl.split(":")[1];
@@ -334,15 +325,15 @@ export async function updateActivity(req, res) {
     }
 
     if (pathToSave) {
-      activity.coverImageUrl = pathToSave;
+      updatedActivity.coverImageUrl = pathToSave;
     }
     
     let activityLog = new ActivityUpdateLog();
-    activityLog.activity = activity;
+    activityLog.activity = updatedActivity;
   
     if (compressionDone) {
       const savedActivity = await getRepository(Activity)
-        .save(activity)
+        .save(updatedActivity)
         .then(response => {
           if (req.file && oldFileUrl) {
             removeAllFiles([oldFileUrl, oldFileUrl.replace(ImageType.COMPRESSED, ImageType.MINIATURE)]);

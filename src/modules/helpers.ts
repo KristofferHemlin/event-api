@@ -1,19 +1,24 @@
-import {createQueryBuilder} from 'typeorm';
+import {createQueryBuilder, Entity} from 'typeorm';
 import User from "../entities/user.entity"
+import Activity from 'src/entities/activity.entity';
 
-export function trimInput(inputObj) {
+export function cleanInput(inputObj) {
     let fields = Object.keys(inputObj);
 
-    let trimmedObj = fields.reduce((obj: any, key:string) => {
+    let cleanedObj = fields.reduce((obj: any, key:string) => {
         obj[key] = inputObj[key].trim();
+        if (obj[key] === "") {
+            obj[key] = null;
+        }
         if (key === "phone") {
             const regEx = new RegExp("[ -]*\\n*", "g");
-            obj[key] = obj[key].replace(regEx, "");
+            if (obj[key]){
+                obj[key] = obj[key].replace(regEx, "");
+            }
         }
         return obj
     }, {})
-
-    return trimmedObj;
+    return cleanedObj;
 }
 
 export function getPagingResponseMessage(records: User[], totalRecords: number, offset:number, limit:number, reqPath: string) {
@@ -67,3 +72,14 @@ export function fetchParticipantBuilder(table: string, id: number, searchValue: 
     }
     return queryBuilder;
   }
+
+export function updateEntityFields(entity, newValues, possibleInputFields) {
+    const updatedUser = possibleInputFields.reduce((entity, field) => {
+        if (newValues[field] !== undefined) {
+            entity[field] = newValues[field] === "null"? null: newValues[field];
+        }
+        return entity
+      }, entity)
+
+    return updatedUser
+}

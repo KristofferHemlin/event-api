@@ -18,12 +18,16 @@ import {
   ImageType, 
   handleMulterError,
   compressAndResize} from '../modules/fileHelpers';
-import {trimInput} from '../modules/helpers';
+import {cleanInput, updateEntityFields} from '../modules/helpers';
 
 // Get storage for multer
 const storage = getStorage("public/original", "profileImage")
 
+const possibleInputFields = ["firstName", "lastName", "email", "phone", "companyDepartment", "aboutMe", "allergiesOrPreferences"]
+
 export async function createUser(req, res) {
+
+  const input = cleanInput(req.body);
 
   const [inputValid, errorMessage, errorDetails] = validateUser(req.body);
 
@@ -34,12 +38,8 @@ export async function createUser(req, res) {
     return;
   }
 
-  let user = new User();
-  user.firstName = req.body.firstName;
-  user.lastName = req.body.lastName;
-  user.phone = req.body.phone;
-  user.email = req.body.email;
-  user.isActive = false;
+  const user = updateEntityFields(new User(), input, possibleInputFields);
+  user.isActive = false;  // Not sure why this is false.. More logical if it is true.
 
   await getRepository(User).save(user)
     .then(response => {
@@ -117,7 +117,7 @@ export async function updateUser(req, res) {
       return res.status(400).send(errorMessage)
     }
 
-    let input = trimInput(req.body);
+    let input = cleanInput(req.body);
     const [inputValid, errorMessage, errorDetails] = validateUser(input);
   
     if (!inputValid) {
@@ -130,13 +130,7 @@ export async function updateUser(req, res) {
       return;
     }
     
-    userToUpdate.firstName = input.firstName;
-    userToUpdate.lastName = input.lastName;
-    userToUpdate.phone = input.phone;
-    userToUpdate.email = input.email;
-    userToUpdate.companyDepartment = input.companyDepartment;
-    userToUpdate.aboutMe = input.aboutMe === "null"? null: input.aboutMe; // Multer (probably) turns null values into string "null"
-    userToUpdate.allergiesOrPreferences = input.allergiesOrPreferences === "null"? null: input.allergiesOrPreferences;
+    const updatedUser = updateEntityFields(userToUpdate, input, possibleInputFields);
     
     let oldFilePath: string;  // Save the old image path so it can be deleted if the update is successfull
 
@@ -152,11 +146,11 @@ export async function updateUser(req, res) {
       removeFile(req.file.path); // Remove the original file to only save the compressed.
     }
     if (pathToSave) {
-      userToUpdate.profileImageUrl = pathToSave;
+      updatedUser.profileImageUrl = pathToSave;
     }
 
     if (compressionDone) {
-      getRepository(User).save(userToUpdate)
+      getRepository(User).save(updatedUser)
       .then(response => {
         if (req.file && oldFilePath){  // Only remove old files if there is a new file
           removeAllFiles([oldFilePath, 
@@ -327,7 +321,7 @@ export async function firstUpdate(req, res) {
           return res.status(403).send({ message: "The user has already signed up" });
         }
         const newPwd = req.body.password;
-        const input = trimInput(req.body);
+        const input = cleanInput(req.body);
 
         const [pwdValid, errorMessagePwd] = validatePassword(newPwd, "password");
         const [inputValid, errorMessageUser, errorDetailsUser] = validateUser(input);
@@ -346,13 +340,10 @@ export async function firstUpdate(req, res) {
           return;
         }
 
-        user.firstName = input.firstName;
-        user.lastName = input.lastName;
-        user.email = input.email;
-        user.phone = input.phone;
-        user.companyDepartment = input.companyDepartment;
-        user.signupComplete = true;
-        user.password = bCrypt.hashSync(input.password, parseInt(process.env.SALT_ROUNDS, 10));
+        const updatedUser = updateEntityFields(user, input, possibleInputFields);
+
+        updatedUser.signupComplete = true;
+        updatedUser.password = bCrypt.hashSync(input.password, parseInt(process.env.SALT_ROUNDS, 10));
         
         const {pathToSave, newFilePaths, compressionDone} = await compressAndResize(req.file, 40)
         
@@ -361,11 +352,11 @@ export async function firstUpdate(req, res) {
         }
 
         if (pathToSave) {
-          user.profileImageUrl = pathToSave;
+          updatedUser.profileImageUrl = pathToSave;
         }
         
         if (compressionDone) {
-          getRepository(User).save(user).then(response => {
+          getRepository(User).save(updatedUser).then(response => {
             response.password = undefined;
             res.status(200).send(response);
           })

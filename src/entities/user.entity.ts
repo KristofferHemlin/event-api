@@ -43,7 +43,7 @@ class User {
   })
   lastName: string;
 
-  @Column()
+  @Column({nullable: true})
   phone: string;
 
   @Column()

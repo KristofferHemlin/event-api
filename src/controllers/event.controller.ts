@@ -6,9 +6,11 @@ import Activity from '../entities/activity.entity';
 
 import {validateEvent} from '../modules/validation';
 import { getStorage, uploadFile, removeFile, getDataUrl, resizeAndCompress, ImageType, removeAllFiles, compressAndResize, handleMulterError } from "../modules/fileHelpers";
-import { trimInput, getPagingResponseMessage, getSortingParams, fetchParticipantBuilder } from "../modules/helpers";
+import { cleanInput, getPagingResponseMessage, getSortingParams, fetchParticipantBuilder, updateEntityFields } from "../modules/helpers";
 
 const storage = getStorage("public/original", "eventImage");
+
+const possibleInputFields = ["title", "description", "startTime", "endTime", "location", "goodToKnow"];
 
 export async function createEvent(req, res) {
   
@@ -31,7 +33,7 @@ export async function createEvent(req, res) {
       });
     }
     
-    const input = trimInput(req.body);
+    const input = cleanInput(req.body);
     const [inputValid, errorMessage, errorDetails] = validateEvent(input);
   
     if (!inputValid) {
@@ -43,15 +45,9 @@ export async function createEvent(req, res) {
         details: errorDetails})
       return;
     }
-  
-    const event = new Event();
-    event.title = input.title;
-    event.description = input.description === "null"? null: input.description;
+    
+    const event = updateEntityFields(new Event(), input, possibleInputFields);
     event.company = company;
-    event.startTime = input.startTime;
-    event.endTime = input.endTime;
-    event.location = input.location;
-    event.goodToKnow = input.goodToKnow === "null"? null: input.goodToKnow;
 
     const {pathToSave, newFilePaths, compressionDone} = await compressAndResize(req.file, 50)
     
@@ -108,7 +104,7 @@ export async function updateEvent(req, res){
       return res.status(400).send(errorMessage)
     }
 
-    const input = trimInput(req.body);
+    const input = cleanInput(req.body);
     const [inputValid, errorMessage, errorDetails] = validateEvent(input);
   
     if (!inputValid) {
@@ -120,12 +116,8 @@ export async function updateEvent(req, res){
         details: errorDetails})
       return;
     }
-    event.title = input.title;
-    event.description = input.description === "null"? null: input.description;
-    event.startTime = input.startTime;
-    event.endTime = input.endTime;
-    event.location = input.location;
-    event.goodToKnow = input.goodToKnow === "null"? null: input.goodToKnow;
+
+    const updatedEvent = updateEntityFields(event, input, possibleInputFields);
     
     let oldFilePath;
     if (event.coverImageUrl) {
@@ -141,10 +133,10 @@ export async function updateEvent(req, res){
     }
 
     if (pathToSave) {
-      event.coverImageUrl = pathToSave;
+      updatedEvent.coverImageUrl = pathToSave;
     }
     if (compressionDone) {
-      getRepository(Event).save(event)
+      getRepository(Event).save(updatedEvent)
       .then(response => {
         if (req.file && oldFilePath) {
             removeAllFiles([oldFilePath, oldFilePath.replace(ImageType.COMPRESSED, ImageType.MINIATURE)]);

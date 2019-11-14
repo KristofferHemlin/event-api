@@ -9,6 +9,9 @@ export function validateFields(input, requiredFields) {
         if (!input[field]){
             detailedMessage[field] = "Required field"
             isValid = false;
+        } else if (input[field] === "null"){
+            detailedMessage[field] = "Cannot be null"
+            isValid = false;
         } else {
             if (validator.isEmpty(input[field], {ignore_whitespace:true})) {
                 detailedMessage[field] = "Cannot be empty";
@@ -80,7 +83,7 @@ export function validateEvent(event) {
 }
 
 export function validateUser(user) {
-    const requiredFields = ["email", "firstName", "lastName", "phone"];
+    const requiredFields = ["email", "firstName", "lastName"];
 
     let [isValid, detailedMessage] = validateFields(user, requiredFields);
 
