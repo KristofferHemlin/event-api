@@ -144,6 +144,13 @@ function setUpAuthenticationRoutes(app){
   })
 
 
+  /**
+   * @api {get} /deepling/:token Redirect user with a deep link
+   * @apiName RedirectDeepLink
+   * @apiGroup Authentication
+   * 
+   * @apiParam {String} token Token from reset password email.
+   */
   app.get('/deeplink/:token', (req, res) => {
     authenticationController.redirectDeepLink(req, res).catch(error => {
       console.error("Error in redirectDeepLink: ", error); // Not sure where to redirect if this fails.
@@ -164,7 +171,9 @@ function setUpAuthenticationRoutes(app){
   app.post('/resetpassword/:token', (req, res) => {
     authenticationController.resetPassword(req, res).catch(error => {
       console.error("Error in resetPasswrd: ", error);
-      res.status(500).send("Error while trying to change password");
+      res.status(500).send({
+        type: error.name,
+        message: "Error while trying to change password"});
     })
   })
 }

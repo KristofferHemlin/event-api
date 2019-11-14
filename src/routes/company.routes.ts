@@ -163,6 +163,14 @@ function setUpCompanyRoutes(app){
     });
   })
 
+  /**
+  * @api {get} /companies/:companyId/users Get all users for a company
+  * @apiPermission Authenticated User - Admin, Company Manager
+  * @apiName GetCompanyUsers
+  * @apiGroup Company
+  *
+  * @apiParam {Number} companyId The unique identifier of the company.
+  */
   app.get('/companies/:companyId/users',(req: express.Request, res: express.Response) => {
     companyController.getAllUsersForCompany(req, res).catch(error => {
       console.error("Error in getAllUsersForCompany: ", error);

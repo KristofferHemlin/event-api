@@ -23,7 +23,13 @@ function setUpUserRoutes(app){
 
   // Create a new user.
   app.post('/users', (req: express.Request, res: express.Response) => {
-    userController.createUser(req, res);
+    userController.createUser(req, res).catch(error => {
+      console.error("Error in createUser:", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Error while creating user."
+      })
+    });
   });
 
 
@@ -36,7 +42,13 @@ function setUpUserRoutes(app){
 
   // Retrieve all users.
   app.get('/users', (req: express.Request, res: express.Response) => {
-    userController.getAllUsers(req, res);
+    userController.getAllUsers(req, res).catch(error => {
+      console.error("Error in getAllUsers:", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Error while fetching user"
+      })
+    });
   });
 
 
@@ -49,7 +61,13 @@ function setUpUserRoutes(app){
 
   // Set up which company the user belongs to.
   app.post('/add-user-to-company', (req: express.Request, res: express.Response) => {
-    userController.addCompanyToUser(req, res);
+    userController.addCompanyToUser(req, res).catch(error => {
+      console.error("Error in addCompanyToUser:", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Error while adding company to user"
+      })
+    });
   });
 
 
@@ -87,7 +105,13 @@ function setUpUserRoutes(app){
 
   // Retrieve information for a single logged in user.
   app.get('/users/me', (req: express.Request, res: express.Response) => {
-    userController.getUserInfoForCurrentUser(req, res);
+    userController.getUserInfoForCurrentUser(req, res).catch(error => {
+      console.error("Error in getUserInfoForCurrentUser:", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Error while fetching information for user"
+      })
+    });
   });
 
 
@@ -128,7 +152,13 @@ function setUpUserRoutes(app){
 
   // Retrieve a single user with userId
   app.get('/users/:userId', (req: express.Request, res: express.Response) => {
-    userController.getUserById(req, res);
+    userController.getUserById(req, res).catch(error => {
+      console.error("Error in getUserById:", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Error while ferching user"
+      })
+    });
   });
 
 
@@ -151,7 +181,13 @@ function setUpUserRoutes(app){
 
   // Update a user with userId
   app.put('/users/:userId', (req: express.Request, res: express.Response) => {
-    userController.updateUser(req, res);
+    userController.updateUser(req, res).catch(error => {
+      console.error("Error in updateUser:", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Error while updating user"
+      })
+    });
   });
 
 
@@ -168,7 +204,13 @@ function setUpUserRoutes(app){
   // FIXME: Needs to be locked down!
   // Delete a user with userId
   app.delete('/users/:userId', (req: express.Request, res: express.Response) => {
-    userController.deleteUser(req, res);
+    userController.deleteUser(req, res).catch(error => {
+      console.error("Error in deleteUser:", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Error while deleting user"
+      })
+    });
   });
 
   
@@ -183,7 +225,13 @@ function setUpUserRoutes(app){
 
   // Get all activities during given event
   app.get('/users/:userId/events/:eventId/activities', (req: express.Request, res: express.Response) => {
-    userController.getUserEventActivities(req, res);
+    userController.getUserEventActivities(req, res).catch(error => {
+      console.error("Error in getUserEventActivities");
+      res.status(500).send({
+        type: error.name,
+        message: "Error when fetching event activities for user"
+      })
+    });
   });
   
   /**
@@ -194,7 +242,14 @@ function setUpUserRoutes(app){
    * @apiParam {Number} userId The unique identifier for the user. 
    */
   
-   app.get('/users/:userId/currentevent', (req, res) => userController.getCurrentEvent(req, res))
+   app.get('/users/:userId/currentevent', (req, res) => {
+     userController.getCurrentEvent(req, res).catch(error => {
+       console.error("Error in getCurrentEvent:", error);
+       res.status(500).send({
+         type: error.name,
+         message: "Error when fetching current event for user"
+       })
+     })})
 
 
    /**
@@ -205,7 +260,15 @@ function setUpUserRoutes(app){
    * 
    * @apiParam {Number} userId The unique identifier for the user. 
    */
-   app.get('/users/:userId/notifications', (req, res) => userController.getUpdateNotifications(req, res))
+  app.get('/users/:userId/notifications', (req, res) => {
+    userController.getUpdateNotifications(req, res).catch(error => {
+      console.error("Error in getUpdateNotifications:", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Error when fetching notifications"
+      })
+     })
+    })
    
    /**
   * @api {put} /users/:userId/firstlogin First update when user log in for the first time
@@ -224,7 +287,15 @@ function setUpUserRoutes(app){
   * @apiParam {String} companyDepartment Department which the user belongs to
   */
 
-  app.put('/users/:userId/firstlogin', (req, res) => {userController.firstUpdate(req, res)});
+  app.put('/users/:userId/firstlogin', (req, res) => {
+    userController.firstUpdate(req, res).catch(error => {
+      console.error("Error in firstUpdate:", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Error when updating user"
+      })
+    })
+  });
   
 /**
  * @api {post} /logout Logs out user.
@@ -237,7 +308,7 @@ function setUpUserRoutes(app){
   app.post('/logout', isAuthenticated, (req, res) => {
     userController.logoutUser(req, res)
       .catch(error => {
-        console.error("Error during /logout:", error)
+        console.error("Error in logoutUser:", error)
         res.status(500).send({
           type: error.name, 
           message: "Could not log out user."})
@@ -253,7 +324,15 @@ function setUpUserRoutes(app){
  * 
  * @apiParam {number} userId The unique identifier for the user.
  */
-  app.delete('/users/:userId/profileimage', (req, res) => userController.deleteProfileImage(req, res))
+  app.delete('/users/:userId/profileimage', (req, res) => {
+    userController.deleteProfileImage(req, res).catch(error => {
+      console.error("Error in deleteProfileImage:", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Could not delete profile image"
+      })
+    })
+  })
 
   
   /**
@@ -265,7 +344,14 @@ function setUpUserRoutes(app){
    * 
    * @apiParam {string} playerId for the user.
    */
-  app.post('/users/:userId/playerids', (req, res) => userController.addPlayerId(req, res));
+  app.post('/users/:userId/playerids', (req, res) => {
+    userController.addPlayerId(req, res).catch(error => {
+      console.error("Error in addPlayerId:", error);
+      res.status(500).send({
+        type: error.name,
+        message: "Could not register user onesignal id"
+      })
+    })});
 }
 
 

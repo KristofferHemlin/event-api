@@ -252,6 +252,15 @@ function setUpEventRoutes(app) {
     });
   })
 
+  /**
+  * @api {delete} /event/:eventId/coverimage Delete an event coverimage
+  * @apiPermission Authenticated User - Admin, Company Manager
+  * @apiName DeleteEventCoverImage
+  * @apiGroup Event
+  *
+  * @apiParam {Number} eventId The unique identifier of the event.
+  */
+  // Delete event cover image
   app.delete('/events/:eventId/coverimage', (req, res) => {
     eventController.deleteCoverImage(req, res).catch(error => {
       console.error("Error in deleteCoverImage: ", error);
