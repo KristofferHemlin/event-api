@@ -10,7 +10,7 @@ function setUpEventRoutes(app) {
     isAuthenticated(req, res, next);
   })
 
-  app.use('v1/events', (req, res, next) => {
+  app.use('/v1/events', (req, res, next) => {
     isAuthenticated(req, res, next);
   })
 

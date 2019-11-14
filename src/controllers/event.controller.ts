@@ -220,10 +220,10 @@ export async function getEventParticipantsV1(req, res) {
     const sortableColumns = ["id", "firstName", "lastName", "companyDepartment"];
     const sortableOrder = ["ASC", "DESC"];
     
-    const pageLimit = req.query.limit? parseInt(req.query.limit): 20;
+    const pageLimit = req.query.limit? parseInt(req.query.limit): 3;
     const pageOffset = req.query.offset? parseInt(req.query.offset): 0;
     const reqPath = req.url;
-    
+
     const [column, order] = getSortingParams(req);
 
     if (!sortableColumns.includes(column) || !sortableOrder.includes(order.toUpperCase())){

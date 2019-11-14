@@ -22,7 +22,14 @@ export function getPagingResponseMessage(records: User[], totalRecords: number, 
 
     if (recordsRemaining > 0) {
         const nextOffset = offset + limit;
-        nextReqPath = reqPath.replace(`offset=${offset}`, `offset=${nextOffset}`)
+        if (reqPath.includes("offset=")){
+            nextReqPath = reqPath.replace(`offset=${offset}`, `offset=${nextOffset}`);
+        } else {
+            nextReqPath = reqPath+"&offset="+nextOffset;
+        }
+        if (!reqPath.includes("limit=")) {
+            nextReqPath += "&limit="+limit;
+        }
     } else {
         nextReqPath = null
     }
