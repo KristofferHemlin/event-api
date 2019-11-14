@@ -6,7 +6,7 @@ import Activity from '../entities/activity.entity';
 
 import {validateEvent} from '../modules/validation';
 import { getStorage, uploadFile, removeFile, getDataUrl, resizeAndCompress, ImageType, removeAllFiles, compressAndResize, handleMulterError } from "../modules/fileHelpers";
-import { trimInput, getPagingResponseMessage, getSortingParams } from "../modules/helpers";
+import { trimInput, getPagingResponseMessage, getSortingParams, fetchParticipantBuilder } from "../modules/helpers";
 
 const storage = getStorage("public/original", "eventImage");
 
@@ -220,10 +220,12 @@ export async function getEventParticipantsV1(req, res) {
     const sortableColumns = ["id", "firstName", "lastName", "companyDepartment"];
     const sortableOrder = ["ASC", "DESC"];
     
-    const pageLimit = req.query.limit? parseInt(req.query.limit): 3;
+    const pageLimit = req.query.limit? parseInt(req.query.limit): 100;
     const pageOffset = req.query.offset? parseInt(req.query.offset): 0;
     const reqPath = req.url;
 
+    const searchValue = req.query.search;
+    
     const [column, order] = getSortingParams(req);
 
     if (!sortableColumns.includes(column) || !sortableOrder.includes(order.toUpperCase())){
@@ -231,32 +233,30 @@ export async function getEventParticipantsV1(req, res) {
         {message: `Specified column or order to sort by is wrong.`});
     }
     
+    const eventId = req.params.eventId;
     // Not optimal to fetch this seperately.
-    const totalRecords = await createQueryBuilder(User)
-      .innerJoin("User.events", "ue", "ue.id=:eventId", {eventId: req.params.eventId})
-      .getCount();
-  
-    createQueryBuilder(User)
-      .innerJoin("User.events", "ue", "ue.id=:eventId", {eventId: req.params.eventId})
-      .offset(pageOffset)
-      .limit(pageLimit)
-      .orderBy(`User.${column}`, order.toUpperCase())
-      .getMany()
-      .then(
-        users => {
-          const usersWithImages = users.map(user => {
-            user.profileImageUrl = getDataUrl(user.profileImageUrl);
-            return user;
-            })
-          const responseMessage = getPagingResponseMessage(usersWithImages, totalRecords, pageOffset, pageLimit, reqPath);
-          return res.status(200).send(responseMessage)}, 
-        error => {
-          console.error("Error while fetching event participants: "+error); 
-          return res.status(500).send({
-            type: error.name,
-            message: "Could not fetch event participants"})
-        }
-      )
+    const totalRecords = await fetchParticipantBuilder("events", eventId, searchValue).getCount();
+    
+    fetchParticipantBuilder("events", eventId, searchValue)
+    .offset(pageOffset)
+    .limit(pageLimit)
+    .orderBy(`User.${column}`, order.toUpperCase())
+    .getMany()
+    .then(
+      users => {
+        const usersWithImages = users.map(user => {
+          user.profileImageUrl = getDataUrl(user.profileImageUrl);
+          return user;
+          })
+        const responseMessage = getPagingResponseMessage(usersWithImages, totalRecords, pageOffset, pageLimit, reqPath);
+        return res.status(200).send(responseMessage)}, 
+      error => {
+        console.error("Error while fetching event participants: "+error); 
+        return res.status(500).send({
+          type: error.name,
+          message: "Could not fetch event participants"})
+      }
+    )
 }
 
 export async function getEventParticipant(req, res) {

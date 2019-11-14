@@ -1,3 +1,4 @@
+import {createQueryBuilder} from 'typeorm';
 import User from "../entities/user.entity"
 
 export function trimInput(inputObj) {
@@ -27,9 +28,6 @@ export function getPagingResponseMessage(records: User[], totalRecords: number, 
         } else {
             nextReqPath = reqPath+"&offset="+nextOffset;
         }
-        if (!reqPath.includes("limit=")) {
-            nextReqPath += "&limit="+limit;
-        }
     } else {
         nextReqPath = null
     }
@@ -56,3 +54,16 @@ export function getSortingParams(request) {
 
   return [column, order]
 }
+
+export function fetchParticipantBuilder(table: string, id: number, searchValue: string) {
+    let queryBuilder = createQueryBuilder(User)
+              .innerJoin("User."+table, table, table+".id=:id", {id: id})
+    if (searchValue) {
+      searchValue = searchValue.toLowerCase();
+      queryBuilder
+        .where(`LOWER(User.firstName) LIKE :searchParam 
+                OR LOWER(User.lastName) LIKE :searchParam 
+                OR LOWER(User.companyDepartment) LIKE :searchParam`, {searchParam: `%${searchValue}%`})
+    }
+    return queryBuilder;
+  }

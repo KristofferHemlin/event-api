@@ -69,7 +69,8 @@ function setUpActivityRoutes(app) {
  // Add pagination
  /**
  * @api {get} v1/activities/:activityId/users Fetch all users on a specific activity.
- * Query params: sort=column:order, offset=pagination offset (number), limit=limit of number of records returned (number)
+ * Query params: sort=column:order, offset=records to skip (number), limit=limit of number of records returned (number, default 100)
+ *  search=text to match firstName, lastName or company department with
  * Example: /v1/activities/:activityId/users?sort=firstName:asc&offset=3&limit=10
  * @apiDescription Fetch all users for an activity. 
  * 

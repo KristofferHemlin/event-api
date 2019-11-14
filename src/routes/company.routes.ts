@@ -9,8 +9,6 @@ function setUpCompanyRoutes(app){
     isAuthenticated(req, res, next);
   })
 
-
-
   /**
   * @api {post} /companies Create a new company
   * @apiPermission Admin & Company Manager

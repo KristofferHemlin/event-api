@@ -6,7 +6,7 @@ import ActivityUpdateLog from '../entities/activitylog.entity';
 import {validateActivity} from '../modules/validation';
 import PlayerId from '../entities/playerId.entity';
 import { getStorage, uploadFile, removeFile, getDataUrl, ImageType, removeAllFiles, compressAndResize, handleMulterError } from '../modules/fileHelpers';
-import { trimInput, getPagingResponseMessage, getSortingParams } from '../modules/helpers';
+import { trimInput, getPagingResponseMessage, getSortingParams, fetchParticipantBuilder } from '../modules/helpers';
 
 const storage = getStorage("public/original", "activityImage")
 
@@ -161,40 +161,43 @@ export async function getActivityUsersV1(req, res) {
   const sortableColumns = ["id", "firstName", "lastName", "companyDepartment"];
   const sortableOrder = ["ASC", "DESC"];
   
-  const pageLimit = req.query.limit? parseInt(req.query.limit): 20;
+  const pageLimit = req.query.limit? parseInt(req.query.limit): 100;
   const pageOffset = req.query.offset? parseInt(req.query.offset): 0;
   const reqPath = req.url;
+
+  const searchValue = req.query.search;
 
   const [column, order] = getSortingParams(req);
 
   if (!sortableColumns.includes(column) || !sortableOrder.includes(order.toUpperCase())){
-    return res.status(400).send({message: "Specified column or order to sort by is wrong."});
+    return res.status(400).send({
+      message: "Specified column or order to sort by is wrong."});
   }
 
+  const activityId = req.params.activityId;
   // Not optimal to fetch this seperately.
-  const totalRecords = await createQueryBuilder(User)
-  .innerJoin("User.activities", "ua")
-  .where("ua.id=:activityId", {activityId: req.params.activityId})
-  .getCount();
+  const totalRecords = await fetchParticipantBuilder("activities", activityId, searchValue).getCount();
 
-  createQueryBuilder(User)
-  .innerJoin("User.activities", "ua")
-  .where("ua.id=:activityId", {activityId: req.params.activityId})
-  .offset(pageOffset)
-  .limit(pageLimit)
-  .orderBy(`User.${column}`, order.toUpperCase())
-  .getMany()
-  .then(
-    participants => {
-      const participantsWithImages = participants.map(participant => {
-        participant.profileImageUrl = getDataUrl(participant.profileImageUrl, ImageType.MINIATURE);
-        return participant;
-      })
-      const responseMessage = getPagingResponseMessage(participantsWithImages, totalRecords, pageOffset, pageLimit, reqPath);
-      res.status(200).send(responseMessage)})
-  .catch(error => {
-    console.error("Error while fetching users for activity "+error);
-    res.status(500).send({message: "Could not fetch activity participants"})})
+  fetchParticipantBuilder("activities", activityId, searchValue)
+    .offset(pageOffset)
+    .limit(pageLimit)
+    .orderBy(`User.${column}`, order.toUpperCase())
+    .getMany()
+    .then(
+      participants => {
+        const participantsWithImages = participants.map(participant => {
+          participant.profileImageUrl = getDataUrl(participant.profileImageUrl, ImageType.MINIATURE);
+          return participant;
+        })
+        const responseMessage = getPagingResponseMessage(participantsWithImages, totalRecords, pageOffset, pageLimit, reqPath);
+        res.status(200).send(responseMessage)})
+    .catch(error => {
+      console.error("Error while fetching users for activity "+error);
+      res.status(500).send({
+        type: error.name,
+        message: "Could not fetch activity participants"})
+      }
+    )
 }
 
 export async function deleteActivity(req, res) {

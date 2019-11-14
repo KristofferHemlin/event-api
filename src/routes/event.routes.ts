@@ -132,7 +132,8 @@ function setUpEventRoutes(app) {
   /**
    * @api {get} /v1/events/:eventId/users
    * @apiDescription This route fetches all user for the specified event. 
-   * Query params: sort=column:order, offset=pagination offset (number), limit=limit of number of records returned (number)
+   * Query params: sort=column:order, offset=record to skip (number), limit=limit (default 100) of number of records returned (number)
+   *  search=text to match firstName, lastName or company department with
    * Example: /v1/events/:eventId/users?sort=firstName:asc&offset=3&limit=10
    * @apiName GetEventParticipantsV1
    * @apiGroup Event
