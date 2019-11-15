@@ -10,6 +10,9 @@ export function cleanInput(inputObj) {
         if (obj[key] === "") {
             obj[key] = null;
         }
+        if (obj[key] === "null") {
+            obj[key] = null;
+        }
         if (key === "phone") {
             const regEx = new RegExp("[ -]*\\n*", "g");
             if (obj[key]){
