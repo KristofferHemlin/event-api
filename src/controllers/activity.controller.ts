@@ -142,11 +142,12 @@ export async function getActivityUsers(req, res) {
   .getMany()
   .then(
     participants => {
-      // const participantsWithImages = participants.map(participant => {
-      //   participant.profileImageUrl = getDataUrl(participant.profileImageUrl, ImageType.MINIATURE);
-      //   return participant;
-      // })
-      res.status(200).send(participants)})
+      // If this is too slow, set profileImageUrl to null before returning.
+      const participantsWithImages = participants.map(participant => {
+        participant.profileImageUrl = getDataUrl(participant.profileImageUrl, ImageType.MINIATURE);
+        return participant;
+      })
+      res.status(200).send(participantsWithImages)})
   .catch(error => {
     console.error("Error while fetching users for activity "+error);
     res.status(500).send({message: "Could not fetch activity participants"})})

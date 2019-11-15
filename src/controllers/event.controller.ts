@@ -192,11 +192,12 @@ export async function getEventParticipants(req, res) {
     .getMany()
     .then(
       users => {
-        // const usersWithImages = users.map(user => {
-        //   user.profileImageUrl = getDataUrl(user.profileImageUrl);
-        //   return user;
-        // })
-        return res.status(200).send(users)},
+        // If this is too slow, set profileImageUrl to null before returning.
+        const usersWithImages = users.map(user => {
+          user.profileImageUrl = getDataUrl(user.profileImageUrl, ImageType.MINIATURE);
+          return user;
+        })
+        return res.status(200).send(usersWithImages)},
       error => {
         console.error("Error while fetching event participants: "+error); 
         return res.status(500).send({
