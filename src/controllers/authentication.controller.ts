@@ -311,6 +311,12 @@ export async function resetPassword(req, res) {
         if (!newPassword) {
           return res.status(400).send({message: "No password specified"})
         }
+        const [isValid, errorMessage] = validatePassword(newPassword, "password");
+
+        if (!isValid) {
+          return res.status(400).send({message: errorMessage});
+        }
+
         bCrypt.hash(newPassword, parseInt(process.env.SALT_ROUNDS, 10), (error, hash) => {
           if (error) {
             return res.status(500).send({message: "Error while processing the request. Password not updated"});
