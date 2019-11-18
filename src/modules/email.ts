@@ -24,6 +24,9 @@ const resetPasswordHtml = (user, url) => {
             font-family:Arial,sans-serif;
             font-size:13px;">Reset password</a>
         <p style="font-family: Arial,sans-serif;font-size: 12px;">
+            (For the link to work properly, you need to open it from the phone where the app is installed.)    
+        </p>
+        <p style="font-family: Arial,sans-serif;font-size: 12px;">
             If you have any other problems or questions, please contact <a href=mailto:${process.env.EMAIL_USER}>${process.env.EMAIL_USER}</a>.</p>
         <p style="font-family: Arial,sans-serif;
         font-size: 12px;">Ciao!</p>
