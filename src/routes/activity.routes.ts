@@ -1,9 +1,14 @@
 import * as express from 'express';
-import * as activityController from '../controllers/activity.controller';
 import isAuthenticated from '../middleware/isAuthenticated';
+import {uplodActivityCoverImage} from '../middleware/fileUploads'
+import ActivityService from "../services/ActivityService";
+import ApplicationError from "../types/errors/ApplicationError";
+import Activity from '../entities/activity.entity';
+import User from '../entities/user.entity';
+import { getSortingParams } from '../modules/helpers';
 
 function setUpActivityRoutes(app) {
-
+  const activityService = new ActivityService();
   // Middleware
   app.use('/activities', (req, res, next) => {
     isAuthenticated(req, res, next);
@@ -20,13 +25,12 @@ function setUpActivityRoutes(app) {
   */
 
   app.get('/activities', (req: express.Request, res: express.Response) => {
-    activityController.getAllActivities(req, res).catch(error => {
-      console.error("Error in getAllActivities: ", error)
-      res.status(500).send({
-        type: error.name,
-        message: "Could not fetch activities"
-      })
-    });
+    activityService.getAllActivities().then((activities: Activity[]) => {
+      res.json(activities);
+    }).catch((error: ApplicationError) => {
+      const status = error.status? error.status : 500;
+      res.status(status).send(error);
+    })
   })
 
   /**
@@ -37,61 +41,68 @@ function setUpActivityRoutes(app) {
   * @apiParam {Number} activityId The unique identifier of the parent event.
   */
 
- app.get('/activities/:activityId', (req: express.Request, res: express.Response) => {
-  activityController.getActivity(req, res).catch(error => {
-    console.error("Error in getActivity: ", error);
-    res.status(500).send({
-      type: error.name,
-      message: "Could not fetch activity"
-    })
-  });
+  app.get('/activities/:activityId', (req: express.Request, res: express.Response) => {
+    const activityId = req.params.activityId;
+    activityService.getActivity(activityId).then((activity: Activity) => {
+      res.json(activity)
+    }).catch((error: ApplicationError) => {
+      const status = error.status? error.status : 500;
+      res.status(status).send(error);
+    });
 })
 
-/**
- * @api {get} /activities/:activityId/users Fetch all users on a specific activity.
- * @apiDescription Fetch all users for an activity. Specify sort order by /events/:eventId/users?sort=firstName:asc
- * @apiName GetActivityParticipants
- * @apiGroup Activity
- * 
- * @apiParam {number} activityId The unique identifier of the activity
- */
+  /**
+   * @api {get} /activities/:activityId/users Fetch all users on a specific activity.
+   * @apiDescription Fetch all users for an activity. Specify sort order by /events/:eventId/users?sort=firstName:asc
+   * @apiName GetActivityParticipants
+   * @apiGroup Activity
+   * 
+   * @apiParam {number} activityId The unique identifier of the activity
+   */
 
- app.get('/activities/:activityId/users', (req: express.Request, res: express.Response) => {
-   activityController.getActivityUsers(req, res).catch(error => {
-     console.error("Error in getActivityUsers: ", error);
-     res.status(500).send({
-       type: error.name,
-       message: "Could not fetch activity participants"
-     })
-   });
+  app.get('/activities/:activityId/users', (req: express.Request, res: express.Response) => {
+    const activityId = req.params.activityId;
+    const sortingParams = getSortingParams(req);
+
+    activityService.getActivityParticipants(activityId, sortingParams).then((participants: User[]) => {
+      res.json(participants)
+    }).catch((error: ApplicationError) => {
+      const status = error.status? error.status : 500;
+      res.status(status).send(error);
+    });
+
  })
 
- // Add pagination
- /**
- * @api {get} v1/activities/:activityId/users Fetch all users on a specific activity.
- * Query params: sort=column:order, offset=records to skip (number), limit=limit of number of records returned (number, default 100)
- *  search=text to match firstName, lastName or company department with
- * Example: /v1/activities/:activityId/users?sort=firstName:asc&offset=3&limit=10
- * @apiDescription Fetch all users for an activity. 
- * 
- * Specify sort order by /events/:eventId/users?sort=firstName:asc
- * @apiName GetActivityParticipantsV1
- * @apiGroup Activity
- * 
- * @apiParam {number} activityId The unique identifier of the activity
- */
+  // Add pagination and search
+  /**
+   * @api {get} v1/activities/:activityId/users Fetch all users on a specific activity.
+   * Query params: sort=column:order, offset=records to skip (number), limit=limit of number of records returned (number, default 100)
+   *  search=text to match firstName, lastName or company department with
+   * Example: /v1/activities/:activityId/users?sort=firstName:asc&offset=3&limit=10&search="test"
+   * @apiDescription Fetch all users for an activity. 
+   * 
+   * Specify sort order by /events/:eventId/users?sort=firstName:asc
+   * @apiName GetActivityParticipantsV1
+   * @apiGroup Activity
+   * 
+   * @apiParam {number} activityId The unique identifier of the activity
+   */
 
-app.get('/v1/activities/:activityId/users', (req: express.Request, res: express.Response) => {
-  activityController.getActivityUsersV1(req, res).catch(error => {
-    console.error("Error in getActivityUsers: ", error);
-    res.status(500).send({
-      type: error.name,
-      message: "Could not fetch activity participants"
-    })
-  });
-})
+  app.get('/v1/activities/:activityId/users', (req: express.Request, res: express.Response) => {
+    const activityId = req.params.activityId;
+    const sortingParams = getSortingParams(req);
+    const limit = req.query.limit? parseInt(req.query.limit): 100;
+    const offset = req.query.offset? parseInt(req.query.offset): 0;
+    const search = req.query.search;
+    const requestPath = req.url;
 
-
+    activityService.getActivityParticipantsV1(activityId, sortingParams, limit, offset, search, requestPath).then(message => {
+      res.json(message)
+    }).catch(error => {
+      const status = error.status? error.status : 500;
+      res.status(status).send(error);
+    });
+  })
 
   /**
   * @api {post} /activities Create a new activity.
@@ -108,17 +119,17 @@ app.get('/v1/activities/:activityId/users', (req: express.Request, res: express.
   * @apiParam {String} goodToKnow Things that is good to know about the activity
   */
 
-  app.post('/activities', (req: express.Request, res: express.Response) => {
-    activityController.createActivity(req, res).catch(error => {
-      console.error("Error in createActivity: ", error);
-      res.status(500).send({
-        type: error.name,
-        message: "Could not create activity"
-      })
+  app.post('/activities', uplodActivityCoverImage, 
+  async (req, res) => {
+    const {eventId, imageUrl, ...newActivity} = req.body;
+    
+    activityService.createActivity(newActivity, eventId, imageUrl).then( activity => {
+      res.json(activity);
+    }).catch((error: ApplicationError) => {
+      const status = error.status? error.status : 500;
+      res.status(status).send(error);
     });
   })
-
-
 
   /**
   * @api {post} /activities/:activityId/add-user Add a user to the activity.
@@ -130,36 +141,16 @@ app.get('/v1/activities/:activityId/users', (req: express.Request, res: express.
   * @apiParam {Number} userId The unique identifier of the user.
   */
 
-  app.post('/activities/:activityId/add-user', (req: express.Request, res: express.Response) => {
-    activityController.addUserToActivity(req, res).catch(error => {
-      console.error("Error in addUserToActivity: ", error);
-      res.status(500).send({
-        type: error.name,
-        message: "Could not add user to activity"
-      })
+  app.post('/activities/:activityId/users/:userId', (req: express.Request, res: express.Response) => {
+    const activityId = req.params.activityId;
+    const userId = req.params.userId;
+    activityService.addParticipant(activityId, userId).then(message => {
+      res.json(message);
+    }).catch((error: ApplicationError) => {
+      const status = error.status? error.status : 500;
+      res.status(status).send(error);
     });
   })
-
-  /**
-  * @api {delete} /activities/:activityId Remove a user from the activity.
-  * @apiName RemoveUserFromActivity
-  * @apiPermission ADMIN (or user set to organizer of the parent event.)
-  * @apiGroup Activity
-  *
-  * @apiParam {Number} activityId The unique identifier of the activity.
-  */
-
-  app.delete('/activities/:activityId', (req: express.Request, res: express.Response) => {
-    activityController.deleteActivity(req, res).catch(error => {
-      console.error("Error in deleteActivity: ", error);
-      res.status(500).send({
-        type: error.name, 
-        message: "Could not delete activity"
-      })
-    });
-  })
-
-
 
   /**
   * @api {put} /activities/:activityId Update the activity information.
@@ -177,13 +168,34 @@ app.get('/v1/activities/:activityId/users', (req: express.Request, res: express.
   * @apiParam {String} goodToKnow Things that is good to know about the activity
   */
 
-  app.put('/activities/:activityId', (req: express.Request, res: express.Response) => {
-    activityController.updateActivity(req, res).catch(error => {
-      console.error("Error in updateActivity: ", error);
-      res.status(500).send({
-        type: error.name,
-        message: "Could not update activity"
-      })
+  app.put('/activities/:activityId', uplodActivityCoverImage,
+  (req, res) => {
+    const activityId = req.params.activityId;
+    const {imageUrl, ...newActivity} = req.body;
+    activityService.updateActivity(activityId, newActivity, imageUrl).then(activity => {
+      res.json(activity);
+    }).catch(error => {
+      const status = error.status? error.status : 500;
+      res.status(status).send(error);
+    })
+  })
+
+  /**
+  * @api {delete} /activities/:activityId Remove a user from the activity.
+  * @apiName RemoveUserFromActivity
+  * @apiPermission ADMIN (or user set to organizer of the parent event.)
+  * @apiGroup Activity
+  *
+  * @apiParam {Number} activityId The unique identifier of the activity.
+  */
+
+  app.delete('/activities/:activityId', (req: express.Request, res: express.Response) => {
+    const activityId = req.params.activityId;
+    activityService.deleteActivity(activityId).then(_ => {
+      res.status(204).send();
+    }).catch((error: ApplicationError) => {
+      const status = error.status? error.status : 500;
+      res.status(status).send(error);
     })
   })
 
@@ -197,13 +209,13 @@ app.get('/v1/activities/:activityId/users', (req: express.Request, res: express.
    */
 
   app.delete('/activities/:activityId/coverimage', (req, res) => {
-    activityController.deleteCoverImage(req, res).catch(error => {
-      console.error("Error in deleteCoverImage: ", error);
-      res.status(500).send({
-        type: error.name,
-        message: "Could not delete cover image"
-      })
-    });
+    const activityId = req.params.activityId;
+    activityService.deleteCoverImage(activityId).then(_ => {
+      res.status(204).send();
+    }).catch((error: ApplicationError) => {
+      const status = error.status? error.status : 500;
+      res.status(status).send(error);
+    })
   })
 
 }

@@ -25,10 +25,8 @@ export function cleanInput(inputObj) {
 }
 
 export function getPagingResponseMessage(records: User[], totalRecords: number, offset:number, limit:number, reqPath: string) {
-
     const recordsRemaining = (totalRecords - (limit + offset)) < 0? 0 : (totalRecords - (limit + offset));
     let nextReqPath;
-
     if (recordsRemaining > 0) {
         const nextOffset = offset + limit;
         if (reqPath.includes("offset=")){
@@ -45,10 +43,9 @@ export function getPagingResponseMessage(records: User[], totalRecords: number, 
         next: nextReqPath,
         remaining: recordsRemaining
     }
-      
 }
 
-export function getSortingParams(request) {
+export function getSortingParams(request): string[] {
     const sortParams = request.query.sort;
     let column, order;
     if (sortParams) {

@@ -5,7 +5,7 @@ import User from '../entities/user.entity';
 import Activity from '../entities/activity.entity';
 
 import {validateEvent} from '../modules/validation';
-import { getStorage, uploadFile, removeFile, getDataUrl, resizeAndCompress, ImageType, removeAllFiles, compressAndResize, handleMulterError } from "../modules/fileHelpers";
+import { getStorage, uploadFile, removeFileFromPath, getDataUrl, resizeAndCompress, ImageType, removeAllFiles, compressAndResize, handleMulterError } from "../modules/fileHelpers";
 import { cleanInput, getPagingResponseMessage, getSortingParams, fetchParticipantBuilder, updateEntityFields } from "../modules/helpers";
 
 const storage = getStorage("public/original", "eventImage");
@@ -26,7 +26,7 @@ export async function createEvent(req, res) {
   
     if(!company){
       if (req.file) {
-        removeFile(req.file.path);
+        removeFileFromPath(req.file.path);
       }
       return res.status(404).send({
         message: 'No company was found with the provided company id.',
@@ -38,7 +38,7 @@ export async function createEvent(req, res) {
   
     if (!inputValid) {
       if (req.file) {
-        removeFile(req.file.path)
+        removeFileFromPath(req.file.path)
       }
       res.status(400).send({
         message: errorMessage,
@@ -52,7 +52,7 @@ export async function createEvent(req, res) {
     const {pathToSave, newFilePaths, compressionDone} = await compressAndResize(req.file, 50)
     
     if (req.file) {
-      removeFile(req.file.path); // Remove the original file to only save the compressed.
+      removeFileFromPath(req.file.path); // Remove the original file to only save the compressed.
     }
 
     if (pathToSave) {
@@ -109,7 +109,7 @@ export async function updateEvent(req, res){
   
     if (!inputValid) {
       if (req.file) {
-        removeFile(req.file.path);
+        removeFileFromPath(req.file.path);
       }
       res.status(400).send({
         message: errorMessage,
@@ -129,7 +129,7 @@ export async function updateEvent(req, res){
     const {pathToSave, newFilePaths, compressionDone} = await compressAndResize(req.file, 50)
     
     if (req.file) {
-      removeFile(req.file.path); // Remove the original file to only save the compressed.
+      removeFileFromPath(req.file.path); // Remove the original file to only save the compressed.
     }
 
     if (pathToSave) {
@@ -188,7 +188,7 @@ export async function getEventParticipants(req, res) {
   
   createQueryBuilder(User)
     .innerJoin("User.events", "ue", "ue.id=:eventId", {eventId: req.params.eventId})
-    .orderBy(`User.${column}`, order.toUpperCase())
+    .orderBy(`User.${column}`, order.toUpperCase()=="ASC"? "ASC": "DESC")
     .getMany()
     .then(
       users => {
@@ -233,7 +233,7 @@ export async function getEventParticipantsV1(req, res) {
     fetchParticipantBuilder("events", eventId, searchValue)
     .offset(pageOffset)
     .limit(pageLimit)
-    .orderBy(`User.${column}`, order.toUpperCase())
+    .orderBy(`User.${column}`, order.toUpperCase()=="ASC"? "ASC": "DESC")
     .getMany()
     .then(
       users => {

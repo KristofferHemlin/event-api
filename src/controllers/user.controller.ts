@@ -12,7 +12,7 @@ import PlayerId from '../entities/playerId.entity';
 import { 
   getStorage, 
   uploadFile, 
-  removeFile, 
+  removeFileFromPath, 
   getDataUrl,
   removeAllFiles, 
   ImageType, 
@@ -122,7 +122,7 @@ export async function updateUser(req, res) {
   
     if (!inputValid) {
       if (req.file) {
-        removeFile(req.file.path);
+        removeFileFromPath(req.file.path);
       }
       res.status(400).send({
         message: errorMessage,
@@ -143,7 +143,7 @@ export async function updateUser(req, res) {
     const {pathToSave, newFilePaths, compressionDone} = await compressAndResize(req.file, 40)
     
     if (req.file) {
-      removeFile(req.file.path); // Remove the original file to only save the compressed.
+      removeFileFromPath(req.file.path); // Remove the original file to only save the compressed.
     }
     if (pathToSave) {
       updatedUser.profileImageUrl = pathToSave;
@@ -316,7 +316,7 @@ export async function firstUpdate(req, res) {
       .then(async user => {
         if (user.signupComplete) {
           if (req.file) {
-            removeFile(req.file.path);
+            removeFileFromPath(req.file.path);
           }
           return res.status(403).send({ message: "The user has already signed up" });
         }
@@ -331,7 +331,7 @@ export async function firstUpdate(req, res) {
 
         if (!inputValid || !pwdValid) {
           if (req.file){
-            removeFile(req.file.path)
+            removeFileFromPath(req.file.path)
           }
 
           res.status(400).send({
@@ -348,7 +348,7 @@ export async function firstUpdate(req, res) {
         const {pathToSave, newFilePaths, compressionDone} = await compressAndResize(req.file, 40)
         
         if (req.file) {
-          removeFile(req.file.path); // Remove the original file to only save the compressed.
+          removeFileFromPath(req.file.path); // Remove the original file to only save the compressed.
         }
 
         if (pathToSave) {
@@ -373,7 +373,7 @@ export async function firstUpdate(req, res) {
       })
       .catch(error => {
         if (req.file){
-          removeFile(req.file.path);
+          removeFileFromPath(req.file.path);
         }
         console.error("Error while updating user for the first time: ", error)
         if (error.response) {

@@ -43,7 +43,7 @@ export function processFormDataNoFile(req, res, callback) {
   multer().none()(req, res, callback);
 }
 
-export function removeFile(path){
+export function removeFileFromPath(path){
   if (path) {
     try {
     fs.unlinkSync(path);
@@ -53,10 +53,26 @@ export function removeFile(path){
   }
 };
 
+export function removeFile(file){
+  if (file) {
+    const path = file.path;
+    removeFileFromPath(path);
+  }
+};
+
 export function removeAllFiles(filePaths: string[]) {
   filePaths.map(filePath => {
-    removeFile(filePath);
+    removeFileFromPath(filePath);
   })
+}
+
+export function removeImages(savedPath) {
+  // The saved path looks like mimetype:path
+  if (savedPath) {
+    const path = savedPath.split(":")[1];
+    const filesToRemove = [path, path.replace(ImageType.COMPRESSED, ImageType.MINIATURE)]
+    removeAllFiles(filesToRemove);
+  }
 }
 
 export function getDataUrl(imageUrl, imageType?: ImageType) {
