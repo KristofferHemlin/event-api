@@ -11,6 +11,19 @@ export function uplodActivityCoverImage(req, res, next) {
     uploadFile(req, res, next, storage, 50); 
 }
 
+export function processFormDataWithoutFile(req, res, next) {
+  multer().none()(req, res, (err) => {
+    if (err) {
+      console.error("Error in multer without file:", err);
+      res.status(400).send({
+        type: err.name,
+        message: "Could not process input data"})
+      return;
+    }
+    next();
+  });
+}
+
 function getStorage(folder: string, filePrefix:string) {
     const storage = multer.diskStorage({
         destination: function (req, file, cb) {
@@ -48,7 +61,7 @@ function uploadFile(req, res, next, storage, compressionRate){
             return;
         }
 
-        const {pathToSave, newFilePaths, compressionDone} = await compressAndResizeImage(req.file, 50)
+        const {pathToSave, newFilePaths, compressionDone} = await compressAndResizeImage(req.file, compressionRate)
         removeFile(req.file);  // Remove the original file.
 
         if (!compressionDone) {
@@ -63,27 +76,29 @@ function uploadFile(req, res, next, storage, compressionRate){
   }
 
 function handleMulterError(error) {
-    let errorMessage;
+  let errorMessage;
+  if (error.field === "image") {
     if (error.code === "LIMIT_FILE_SIZE") {
       errorMessage = {
         type: error.name,
         message: `Image size too large, must be smaller than ${MAXSIZE} MB`
       }
-    } else if (error.message) {
-      errorMessage = {
-        type: error.name,
-        message: error.message,
-        details: error
-      }
     } else {
       errorMessage = {
         type: error.name,
-        message: "Could not parse form data",
+        message: "Could not upload the image",
         details: error,
       }
     }
-    return errorMessage;
+  } else {
+    errorMessage = {
+      type: error.name,
+      message: "Could not parse the input data",
+      details: error,
+    }
   }
+  return errorMessage;
+}
 
 export async function compressAndResizeImage(file, compressQuality=50) {
 let newFilePaths;

@@ -93,3 +93,11 @@ export function rawToEntity(type, data) {
     }, {})
     return newObj;
 }
+
+export function deselectFields(entity, fieldsToRemove) {
+    const newEntity = fieldsToRemove.reduce((map, field) => {
+        delete map[field];
+        return map;
+    }, {...entity});   
+    return newEntity;
+}

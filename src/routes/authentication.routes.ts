@@ -1,9 +1,10 @@
 import * as express from 'express';
-import * as authenticationController from '../controllers/authentication.controller';
 import isAuthenticated from '../middleware/isAuthenticated';
+import AuthenticationService from '../services/AuthenticationService';
+import {processFormDataWithoutFile} from '../middleware/fileUploads';
 
 function setUpAuthenticationRoutes(app){
-
+  const authenticationService = new AuthenticationService();
   /**
   * @api {post} /authenticate Authenticate user credentials
   *
@@ -21,12 +22,13 @@ function setUpAuthenticationRoutes(app){
 
   // Authenticate user.
   app.post('/authenticate', (req: express.Request, res: express.Response) => {
-    authenticationController.authenticateUser(req, res).catch(error => {
-      console.error("Error in authenticateUser: ", error);
-      res.status(500).send({
-        type: error.name,
-        message: "Could not authenticate user"
-      })
+    const email = req.body.email;
+    const password = req.body.password;
+    authenticationService.authenticateUser(email, password).then(user => {
+      res.json(user);
+    }).catch(error => {
+      const status = error.status? error.status: 500;
+      res.status(status).send(error);
     });
   });
 
@@ -41,13 +43,14 @@ function setUpAuthenticationRoutes(app){
    * @apiParam {String} (body parameter) userId User unique id
    */
   app.post('/tokens/refresh', (req, res) => {
-    authenticationController.refreshToken(req, res).catch(error => {
-      console.error("Error in refeshToken: ", error);
-      res.status(500).send({
-        type: error.name,
-        message: "Could not refresh token"
-      })
-    });
+    const userId = parseInt(req.body.userId);
+    const refreshToken = req.body.refreshToken;
+    authenticationService.refreshToken(userId, refreshToken).then(tokens => {
+      res.json(tokens);
+    }).catch(error => {
+      const status = error.status? error.status: 500;
+      res.status(status).send(error);
+    })
   })
 
   /**
@@ -57,13 +60,13 @@ function setUpAuthenticationRoutes(app){
    * @apiGroup Authentication
    */ 
   app.get('/tokens/validate', (req, res) => {
-    authenticationController.validateAccessToken(req, res).catch(error => {
-      console.error("Error in validateAccessToken: ", error);
-      res.status(500).send({
-        type: error.name,
-        message: "Could not validate access token"
-      })
-    });
+    const token = req.headers.authorization;
+    authenticationService.validateAccessToken(token).then(() => {
+      res.status(204).send();
+    }).catch(error => {
+      const status = error.status? error.status: 500;
+      res.status(status).send(error);
+    })
   })
 
 
@@ -85,13 +88,13 @@ function setUpAuthenticationRoutes(app){
   */
 
   // Sign up new user.
-  app.post('/sign-up-new-user', (req: express.Request, res: express.Response) => {
-    authenticationController.signUpNewUser(req, res).catch(error => {
-      console.error("Error in signUpNewUser: ", error);
-      res.status(500).send({
-        type: error.name,
-        message: "Could not sign up new user"
-      })
+  app.post('/signup', (req: express.Request, res: express.Response) => {
+    const {title, ...userData} = req.body;
+    authenticationService.signUpNewUser(userData, title).then(user => {
+      res.json(user)
+    }).catch(error => {
+      const status = error.status? error.status: 500;
+      res.status(status).send(error);
     });
   });
 
@@ -110,15 +113,15 @@ function setUpAuthenticationRoutes(app){
 
   // Change password
   app.put('/account/password', 
-    isAuthenticated,
-    (req, res) => {
-      authenticationController.changeUserPassword(req, res).catch(error => {
-        console.error("Error in changeUserPassword: ", error);
-        res.status(500).send({
-          type: error.name,
-          message: "Error while changing user password"
-        })
-      });
+    isAuthenticated, processFormDataWithoutFile,(req, res) => {
+      const {currentPassword, newPassword} = req.body;
+      const userId = parseInt(req.decoded.userId);
+      authenticationService.changeUserPassword(userId, currentPassword, newPassword).then(response => {
+        res.json(response)
+      }).catch(error => {
+        const status = error.status? error.status: 500;
+        res.status(status).send(error);
+      })
     });
 
   
@@ -134,12 +137,12 @@ function setUpAuthenticationRoutes(app){
     */  
 
   app.post('/resetpassword', (req, res) => {
-    authenticationController.sendResetPasswordEmail(req, res).catch(error => {
-      console.error("Error in sendResetPasswordEmail: ", error);
-      res.status(500).send({
-        type: error.name,
-        message: "Error while sending reset password email."
-      })
+    const email = req.body.email;
+    authenticationService.sendResetPasswordEmail(email).then(response => {
+      res.json(response);
+    }).catch(error => {
+      const status = error.status? error.status: 500;
+      res.status(status).send(error);
     })
   })
 
@@ -152,9 +155,9 @@ function setUpAuthenticationRoutes(app){
    * @apiParam {String} token Token from reset password email.
    */
   app.get('/deeplink/:token', (req, res) => {
-    authenticationController.redirectDeepLink(req, res).catch(error => {
-      console.error("Error in redirectDeepLink: ", error); // Not sure where to redirect if this fails.
-    })
+    // Needed because evently:// does not become a valid hyperlink.
+    const token = req.params.token;
+    res.redirect('evently://resetpassword/'+token);
   })
 
   /**
@@ -169,12 +172,20 @@ function setUpAuthenticationRoutes(app){
   * @apiParam {String} password New password
   */  
   app.post('/resetpassword/:token', (req, res) => {
-    authenticationController.resetPassword(req, res).catch(error => {
-      console.error("Error in resetPasswrd: ", error);
-      res.status(500).send({
-        type: error.name,
-        message: "Error while trying to change password"});
+    const token = req.params.token;
+    const password = req.body.password;
+    authenticationService.resetPassword(token, password).then(response => {
+        res.json(response);
+    }).catch(error => {
+      const status = error.status? error.status: 500;
+      res.status(status).send(error);
     })
+  //   authenticationController.resetPassword(req, res).catch(error => {
+  //     console.error("Error in resetPasswrd: ", error);
+  //     res.status(500).send({
+  //       type: error.name,
+  //       message: "Error while trying to change password"});
+  //   })
   })
 }
 

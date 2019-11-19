@@ -2,16 +2,27 @@ import { getRepository, createQueryBuilder } from 'typeorm';
 
 import User from '../entities/user.entity';
 import PlayerId from '../entities/playerId.entity';
+import { rejects } from 'assert';
 
 export default class UserModel {
 
-    getUserById(userId: number, additionalRelations: string[]=[]): Promise<User> {
-        return getRepository(User)
-            .findOne({id: userId}, {relations: additionalRelations})
-            .catch(error => {
-                console.error("Error while fetching user:", error);
-                return Promise.reject(error); 
-            });
+    getUserById(userId: number, additionalFields: string[]=[], additionalRelations: string[]=[]): Promise<User> {
+        return this.getUserBy("id", userId.toString(), additionalFields, additionalRelations);
+    }
+
+    getUserByEmail(email: string, additionalFields: string[] = [], additionalRelations: string[]=[]): Promise<User> {
+        return this.getUserBy("email", email, additionalFields, additionalRelations);
+    }
+
+    getUserByToken(token: string, additionalFields: string[]=[], additionalRelations: string[]=[]): Promise<User> {
+        return this.getUserBy("resetPwdToken", token, additionalFields, additionalRelations);
+    }
+
+    saveUser(user: User): Promise<User> {
+        return getRepository(User).save(user).catch(error => {
+            console.error("Error while saving user:", error);
+            return Promise.reject(error);
+        })
     }
 
     // Find a good term for type for activities and events
@@ -72,6 +83,26 @@ export default class UserModel {
                 console.error(`Error while removing playerIds: `, error)
                 return Promise.reject(error);
             })
+    }
+
+    private getUserBy(type: string, typeIdentifier: string, additionalFields: string[] = [], additionalRelations: string[]=[]): Promise<User> {
+        try {
+            let queryBuilder = getRepository(User).createQueryBuilder();
+            additionalFields.forEach(field => {
+                queryBuilder.addSelect("User."+field)});
+            additionalRelations.forEach(relation => {
+                queryBuilder.innerJoinAndSelect("User."+relation, relation)
+            });
+            return queryBuilder.where(`User.${type} = :identifier`, { identifier: typeIdentifier })
+                .getOne()
+                .catch(error => {
+                    console.error(`Error while fetching user by ${type}:`, error);
+                    return Promise.reject(error)
+                });
+        } catch (error) {
+            console.error("Error when fetching user:", error);
+            return Promise.reject(error);
+        }
     }
 
     private fetchParticipantBuilder(table: string, id: number, additionalRelations: string[], searchValue: string) {
