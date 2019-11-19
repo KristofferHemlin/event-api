@@ -18,7 +18,7 @@ import {
   ImageType, 
   handleMulterError,
   compressAndResize} from '../modules/fileHelpers';
-import {cleanInput, updateEntityFields} from '../modules/helpers';
+import {cleanInput, updateEntityFields, rawToEntity} from '../modules/helpers';
 
 // Get storage for multer
 const storage = getStorage("public/original", "profileImage")
@@ -273,35 +273,30 @@ export async function getCurrentEvent(req, res) {
 
 export async function getUpdateNotifications(req, res) {
   const limit = req.query.limit ? parseInt(req.query.limit) : 10;
+
   createQueryBuilder(ActivityUpdateLog)
-    .innerJoinAndSelect("ActivityUpdateLog.activity", "activity")
+    .innerJoin("ActivityUpdateLog.activity", "activity")
     .innerJoin("activity.participants", "user")
     .where("user.id=:userId", { userId: req.params.userId })
-    .orderBy("ActivityUpdateLog.createdAt", "DESC")
-    .getMany()
+    .select("MAX(ActivityUpdateLog.createdAt)", "updatetime")
+    .addSelect("activity")
+    .groupBy("activity.id")
+    .limit(limit)
+    .orderBy("updatetime", "DESC")
+    .getRawMany()
     .then(
       updateLogs => {
-        const logs = removeDuplicates(updateLogs.slice(0, limit));
-        return res.status(200).send(logs);
+        const updateData = updateLogs.map(updateLog => {
+          const {updatetime, updateLogId, ...activityRaw} = updateLog;
+          return {activity: rawToEntity("activity", activityRaw)}; // Could make a v1 and return this better
+        })
+        return res.status(200).send(updateData);
       },
       error => {
         console.error("Error while fetching update logs:", error);
         return res.status(500).send({ message: "Error while trying to fetch notifications" })
       }
     )
-}
-
-//Helper function for removing duplicates, could be improved
-function removeDuplicates(array) {
-  var filteredArray = [];
-  var activityIds = []
-  array.forEach(element => {
-    if (!activityIds.includes(element.activity.id)) {
-      filteredArray.push(element);
-      activityIds.push(element.activity.id);
-    }
-  });
-  return filteredArray;
 }
 
 export async function firstUpdate(req, res) {

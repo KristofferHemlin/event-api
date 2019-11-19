@@ -86,3 +86,13 @@ export function updateEntityFields(entity, newValues, possibleInputFields) {
 
     return updatedUser
 }
+
+export function rawToEntity(type, data) {
+    const keys = Object.keys(data);
+    const newObj = keys.reduce((obj, key) => {
+        const entityKey = key.replace(type+"_", "");
+        obj[entityKey] = data[key];
+        return obj;
+    }, {})
+    return newObj;
+}
