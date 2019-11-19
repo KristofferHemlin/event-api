@@ -157,20 +157,22 @@ export async function compressAndResize(file, compressQuality=50) {
 
 export function handleMulterError(error) {
   let errorMessage;
-  if (error.code === "LIMIT_FILE_SIZE") {
-    errorMessage = {
-      type: error.name,
-      message: `Image size too large, must be smaller than ${maxFileSize} MB`
-    }
-  } else if (error.message) {
-    errorMessage = {
-      type: error.name,
-      message: error.message
+  if (error.field === "image") {
+    if (error.code === "LIMIT_FILE_SIZE") {
+      errorMessage = {
+        type: error.name,
+        message: `Image size too large, must be smaller than ${maxFileSize} MB`
+      }
+    } else {
+      errorMessage = {
+        type: error.name,
+        message: "Could not upload the image"
+      }
     }
   } else {
     errorMessage = {
       type: error.name,
-      message: "Could not parse form data"
+      message: "Could not parse the input data"
     }
   }
   return errorMessage;
