@@ -1,36 +1,15 @@
 import * as express from 'express';
-import * as companyController from '../controllers/company.controller';
 import isAuthenticated from '../middleware/isAuthenticated';
+import CompanyService from '../services/CompanyService';
 
 function setUpCompanyRoutes(app){
-
+  const companyService = new CompanyService();
   // Middleware
   app.use('/companies', (req, res, next) => {
     isAuthenticated(req, res, next);
   })
 
-  /**
-  * @api {post} /companies Create a new company
-  * @apiPermission Admin & Company Manager
-  * @apiName CreateCompany
-  * @apiGroup Company
-  * @apiDeprecated This is handled by (#Authentication:SignUpNewUser)
-  */
-
-  // Create a new company.
-  app.post('/companies', (req: express.Request, res: express.Response) => {
-    companyController.createCompany(req, res).catch(error => {
-      console.error("Error in createCompany: ", error);
-      res.status(500).send({
-        type: error.name,
-        message: "Could not create new company"
-      })
-    });
-  });
-
-
-
-  /**
+    /**
   * @api {get} /companies Get all companies
   * @apiPermission Admin
   * @apiName GetAllCompanies
@@ -39,16 +18,13 @@ function setUpCompanyRoutes(app){
 
   // Retrieve all companies.
   app.get('/companies', (req: express.Request, res: express.Response) => {
-    companyController.getAllCompanies(req, res).catch(error => {
-      console.error("Error in getAllCompanies: ", error);
-      res.status(500).send({
-        type: error.name,
-        message: "Error while fetching companies"
-      })
-    });
+    companyService.getCompanies().then(companies => {
+      res.json(companies);
+    }).catch(error => {
+      const status = error.status? error.status : 500;
+      res.status(status).send(error);
+    })
   });
-
-
 
   /**
   * @api {get} /companies/:companyId Get a single company by id
@@ -66,16 +42,80 @@ function setUpCompanyRoutes(app){
 
   // Retrieve a single company with companyId
   app.get('/companies/:companyId', (req: express.Request, res: express.Response) => {
-    companyController.getCompanyById(req, res).catch(error =>  {
-      console.error("Error in getCompanyById: ", error);
-      res.status(500).send({
-        type: error.name,
-        message: "Error while fetching company"
+      const companyId = req.params.companyId;
+      companyService.getCompanyById(companyId).then(company => {
+        res.json(company);
+      }).catch(error => {
+        const status = error.status? error.status : 500;
+        res.status(status).send(error);
       })
-    });
   });
 
+    /**
+  * @api {get} /companies/:companyId/events Get all events for a company
+  * @apiPermission Authenticated User - Admin, Company Manager, Company Member
+  * @apiName GetCompanyEvents
+  * @apiGroup Company
+  *
+  * @apiParam {Number} companyId The unique identifier of the company.
+  */
 
+  // Get all events for a company.
+  app.get('/companies/:companyId/events', (req: express.Request, res: express.Response) => {
+    const companyId = req.params.companyId;
+    companyService.getCompanyEvents(companyId).then(events => {
+      res.json(events)
+    }).catch(error => {
+      const status = error.status? error.status : 500;
+      res.status(status).send(error);
+    })
+    
+    // companyController.getAllEventsForCompany(req, res).catch(error => {
+    //   console.error("Error in getAllEventsForCompany: ", error);
+    //   res.status(500).send({
+    //     type: error.name, 
+    //     message: "Error while fetching company events"
+    //   })
+    // });
+  })
+
+  /**
+  * @api {get} /companies/:companyId/users Get all users for a company
+  * @apiPermission Authenticated User - Admin, Company Manager
+  * @apiName GetCompanyUsers
+  * @apiGroup Company
+  *
+  * @apiParam {Number} companyId The unique identifier of the company.
+  */
+  app.get('/companies/:companyId/users',(req: express.Request, res: express.Response) => {
+    const companyId = req.params.companyId;
+    companyService.getCompanyEmployees(companyId).then(employees => {
+      res.json(employees);
+    }).catch(error => {
+      const status = error.status? error.status : 500;
+      res.status(status).send(error);
+    });
+  })
+
+
+  /**
+  * @api {post} /companies Create a new company
+  * @apiPermission Admin
+  * @apiName CreateCompany
+  * @apiGroup Company
+  * 
+  * @apiParam {String} title The company title
+  */
+
+  // Create a new company.
+  app.post('/companies', (req: express.Request, res: express.Response) => {
+    companyService.createCompany(req.body).then(company => {
+      res.json(company);
+    }).catch(error => {
+      const status = error.status? error.status : 500;
+      res.status(status).send(error);
+    })
+  });
 
   /**
   * @api {put} /companies/:companyId Update a single company by id
@@ -89,42 +129,18 @@ function setUpCompanyRoutes(app){
 
   // Update a company with companyId
   app.put('/companies/:companyId', (req: express.Request, res: express.Response) => {
-    companyController.updateCompany(req, res).catch(error => {
-      console.error("Error in updateCompany: ", error);
-      res.status(500).send({
-        type: error.name,
-        message: "Error while updating company"
-      })
-    });
+    const companyId = req.params.companyId;
+    companyService.updateCompany(companyId, req.body).then(company => {
+      res.json(company);
+    }).catch(error => {
+      const status = error.status? error.status : 500;
+      res.status(status).send(error);
+    })
   });
 
-
   /**
-  * @api {delete} /companies/:companyId/remove-user Remove a single user from a company by id
-  * @apiPermission Authenticated User - Admin, Company Manager
-  * @apiName RemoveSingleUserFromCompany
-  * @apiGroup Company
-  *
-  * @apiParam {Number} companyId The unique identifier of the company.
-  * @apiParam {Number} userId The unique identifier of the user.
-  */
-
-  // Remove a user from a company
-  app.delete('/companies/:companyId/remove-user', (req: express.Request, res: express.Response) => {
-    companyController.removeUserFromCompany(req, res).catch(error => {
-      console.error("Error in removeUserFromCompany: ", error);
-      res.status(500).send({
-        type: error.name,
-        message: "Error while removing user from company"
-      })
-    });
-  });
-
-
-
-  /**
-  * @api {delete} /companies/:companyId Delete a company by id
-  * @apiPermission Authenticated User - Admin, Company Manager
+  * @api {delete} /companies/:companyId Delete a company by id. Removes all users associated with the company.
+  * @apiPermission Admin, Company Manager
   * @apiName DeleteCompany
   * @apiGroup Company
   *
@@ -133,54 +149,14 @@ function setUpCompanyRoutes(app){
 
   // Delete a company with companyId
   app.delete('/companies/:companyId', (req: express.Request, res: express.Response) => {
-    companyController.deleteCompany(req, res).catch(error => {
-      console.error("Error in deleteCompany: ", error);
-      res.status(500).send({
-        type: error.name,
-        message: "Error while deleting company"
-      })
-    });
-  });
-
-
-  /**
-  * @api {get} /companies/:companyId/events Get all events for a company
-  * @apiPermission Authenticated User - Admin, Company Manager, Company Member
-  * @apiName GetCompanyEvents
-  * @apiGroup Company
-  *
-  * @apiParam {Number} companyId The unique identifier of the company.
-  */
-
-  // Get all events for a company.
-  app.get('/companies/:companyId/events', (req: express.Request, res: express.Response) => {
-    companyController.getAllEventsForCompany(req, res).catch(error => {
-      console.error("Error in getAllEventsForCompany: ", error);
-      res.status(500).send({
-        type: error.name, 
-        message: "Error while fetching company events"
-      })
-    });
-  })
-
-  /**
-  * @api {get} /companies/:companyId/users Get all users for a company
-  * @apiPermission Authenticated User - Admin, Company Manager
-  * @apiName GetCompanyUsers
-  * @apiGroup Company
-  *
-  * @apiParam {Number} companyId The unique identifier of the company.
-  */
-  app.get('/companies/:companyId/users',(req: express.Request, res: express.Response) => {
-    companyController.getAllUsersForCompany(req, res).catch(error => {
-      console.error("Error in getAllUsersForCompany: ", error);
-      res.status(500).send({
-        type: error.name,
-        message: "Error while fetching company users"
-      })
-    });
-  }) 
-
+    const companyId = req.params.companyId;
+    companyService.deleteCompany(companyId).then(() => {
+      res.status(204).send();
+    }).catch(error => {
+      const status = error.status? error.status : 500;
+      res.status(status).send(error);
+    })
+  }); 
 
 }
 

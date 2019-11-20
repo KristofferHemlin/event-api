@@ -26,24 +26,24 @@ export default class UserModel {
     }
 
     // Find a good term for type for activities and events
-    getParticipants(type: string, id: number, additionalRelations: string[]=[], sortColumn="id", sortOrder="ASC"): Promise<User[]> {
+    getUsersOn(relationType: string, relationId: number, additionalRelations: string[]=[], sortColumn="id", sortOrder="ASC"): Promise<User[]> {
         try {
-            return this.fetchParticipantBuilder(type, id, additionalRelations, "")
+            return this.fetchParticipantBuilder(relationType, relationId, additionalRelations, "")
                 .orderBy(`User.${sortColumn}`, sortOrder.toUpperCase()==="ASC"? "ASC": "DESC")
                 .getMany()
                 .catch(error => {
-                console.error(`Error while fetching users for ${type}:`, error);
+                console.error(`Error while fetching users for ${relationType}:`, error);
                 return Promise.reject(error);
                 })
         } catch (error) {
-            console.error(`Error while fetching users for ${type}:`, error);
+            console.error(`Error while fetching users for ${relationType}:`, error);
             return Promise.reject(error);
         }
       }
     
-    getParticipantsV1(type: string, id: number, additionalRelations, sortColumn, sortOrder, searchParam, limit, offset): Promise<User[]> {        
+    getUsersOnV1(relationType: string, relationId: number, additionalRelations, sortColumn, sortOrder, searchParam, limit, offset): Promise<User[]> {        
         try {
-            return this.fetchParticipantBuilder(type, id, additionalRelations, searchParam)
+            return this.fetchParticipantBuilder(relationType, relationId, additionalRelations, searchParam)
                 .offset(offset)
                 .limit(limit)
                 .orderBy(`User.${sortColumn}`, sortOrder.toUpperCase()=="ASC"? "ASC": "DESC")
@@ -51,16 +51,16 @@ export default class UserModel {
                 .then((participants: User[]) => {
                     return participants;
                 }).catch(error => {
-                    console.error(`Error while fetching users for ${type}:`, error);
+                    console.error(`Error while fetching users for ${relationType}:`, error);
                     return Promise.reject(error);
                 })
         } catch (error) {
-            console.error(`Error while fetching users for ${type}:`, error);
+            console.error(`Error while fetching users for ${relationType}:`, error);
             return Promise.reject(error);
         }
     }
     
-    getParticipantCount(table: string, id: number, searchValue): Promise<number> {
+    getUsersCount(table: string, id: number, searchValue): Promise<number> {
         try {
             return this.fetchParticipantBuilder(table, id, [], searchValue).getCount()
                 .catch(error => {

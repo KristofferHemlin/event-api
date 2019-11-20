@@ -50,7 +50,7 @@ export default class ActivityService {
             throw new RequestNotValidError("Specified column or order to sort by is wrong.");
         }
 
-        return this.userModel.getParticipants("activities", activityId, [], column, order).then(participants => {
+        return this.userModel.getUsersOn("activities", activityId, [], column, order).then(participants => {
             // If this is too slow, set profileImageUrl to null before returning.
             const participantsWithImages = participants.map(participant => {
             participant.profileImageUrl = getDataUrl(participant.profileImageUrl, ImageType.MINIATURE);
@@ -73,8 +73,8 @@ export default class ActivityService {
       }
   
       // Not optimal to have a separate request for this.
-      return this.userModel.getParticipantCount("activities", activityId, searchParam).then(totalRecords => {
-          return this.userModel.getParticipantsV1("activities", activityId, [], column, order, searchParam, pageLimit, pageOffset).then((users: User[]) => {
+      return this.userModel.getUsersCount("activities", activityId, searchParam).then(totalRecords => {
+          return this.userModel.getUsersOnV1("activities", activityId, [], column, order, searchParam, pageLimit, pageOffset).then((users: User[]) => {
               const participantsWithImages = users.map(participant => {
                   participant.profileImageUrl = getDataUrl(participant.profileImageUrl, ImageType.MINIATURE);
                   return participant;
@@ -188,7 +188,7 @@ export default class ActivityService {
   
       if (savedActivity) {
         removeImages(oldFileUrl);
-        this.userModel.getParticipants("activities", activityId, ["playerIds"]).then(users => {
+        this.userModel.getUsersOn("activities", activityId, ["playerIds"]).then(users => {
           if (users.length > 0) {
             const recipients = [].concat(...users.map(user => {
               return user.playerIds.map(playerId => {

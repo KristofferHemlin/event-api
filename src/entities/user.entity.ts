@@ -79,7 +79,7 @@ class User {
   @ManyToOne(type => Role, role => role.users, {cascade: true, nullable: false})
   role: Role;
 
-  @ManyToOne(type => Company, company => company.employees, {cascade: true, nullable: false})
+  @ManyToOne(type => Company, company => company.employees, {cascade: true, nullable: false, onDelete: "CASCADE"})
   company: Company;
 
   @ManyToMany(type => Event, event => event.participants, {cascade: true})

@@ -22,6 +22,21 @@ export default class AuthenticationService {
     userModel = new UserModel();
     generalModel = new GeneralModel();
 
+    async validateAccessToken(token) {
+        const bearerToken =  token; // Bearer {token}
+        if (!bearerToken){
+            throw new RequestNotValidError("No access token provided");
+        }
+        const [_, accessToken] = bearerToken.split(" "); 
+        jwt.verify(accessToken, process.env.JWT_SECRET, (err, decoded) => {
+          if (err){
+            throw new AccessTokenError("Access token not valid");
+          } else {
+            return Promise.resolve();
+          }
+        })
+    }
+
     async authenticateUser(email: string, password: string) {
         const theUser = await this.userModel.getUserByEmail(email, ["password"], ["company", "role"]).catch(() => {
            throw new ServerError("Error while trying to authenticate user");
@@ -107,92 +122,6 @@ export default class AuthenticationService {
         })
     }
 
-    async validateAccessToken(token) {
-        const bearerToken =  token; // Bearer {token}
-        if (!bearerToken){
-            throw new RequestNotValidError("No access token provided");
-        }
-        const [_, accessToken] = bearerToken.split(" "); 
-        jwt.verify(accessToken, process.env.JWT_SECRET, (err, decoded) => {
-          if (err){
-            throw new AccessTokenError("Access token not valid");
-          } else {
-            return Promise.resolve();
-          }
-        })
-      
-    }
-
-    async signUpNewUser(userData, companyTitle: string) {
-        // TODO: Need more checks when company is created, so no duplicate companies. 
-            // More logical to create company and assign a new user as company manager?
-            // Need verification and better error handling
-        // create a company.
-        // add a role.
-        // create a user.
-        // assign company to user.
-        // save user.
-        
-        const role = await this.generalModel.getRoleFromName(COMPANY_MANAGER).catch(() => {
-            throw new ServerError("Could not sign up new user");
-        });
-        const company = new Company();
-        company.title = companyTitle;
-      
-        const user = new User();
-        user.firstName = userData.firstName || null;
-        user.lastName = userData.lastName || null;
-        user.email = userData.email.toLowerCase() || null;
-        user.phone = userData.phone || null;
-        user.password = bCrypt.hashSync(userData.password, parseInt(process.env.SALT_ROUNDS, 10));
-        user.signupComplete = false;
-        user.isActive = true;
-        user.company = company;
-        user.role = role;
-        return this.userModel.saveUser(user).then(user => {
-            return user;
-        }).catch(error => {
-            throw new ServerError("Could not sign up new user");
-        })
-    }
-
-    async changeUserPassword(userId, currentPwd, newPwd) {      
-        if (!userId) {
-            throw new ServerError("Could not process the request", "No userId provided");
-        }
-        if (!currentPwd) {
-            throw new RequestNotValidError("Current password not specified");
-        }
-
-        let [isValid, errorMessage] = validatePassword(newPwd, "newPassword", currentPwd);
-    
-        if (!isValid) {
-        throw new InputNotValidError(errorMessage);
-        }
-        
-        const user = await this.userModel.getUserById(userId, ["password"]).catch(error => {
-            throw new ServerError("Could not change user password");
-        })
-        if (!user) {
-            throw new ResourceNotFoundError("The user account does not exist");
-        }
-    
-        const isMatch = await bCrypt.compare(currentPwd, user.password).catch(error => {
-            console.error("Error while comparing passwords:", error);
-            throw new ServerError("Could not change user password");
-        })
-        if (!isMatch) {
-            throw new RequestNotValidError("The current password is wrong");
-        }
-        user.password = bCrypt.hashSync(newPwd, parseInt(process.env.SALT_ROUNDS, 10));
-
-        return this.userModel.saveUser(user).then(() => {
-            return {message: "Password changed"};
-        }).catch(() => {
-            throw new ServerError("The password could not be changed");
-        })
-      }
-      
     async sendResetPasswordEmail(email: string) {
         
         if (!email) {
@@ -267,6 +196,76 @@ export default class AuthenticationService {
         }).catch(() => {
             throw new ServerError("Could not update password");
         })        
+      }
+
+    async signUpNewUser(userData, companyTitle: string) {
+        // TODO: Need more checks when company is created, so no duplicate companies. 
+            // More logical to create company and assign a new user as company manager?
+            // Need verification and better error handling
+        // create a company.
+        // add a role.
+        // create a user.
+        // assign company to user.
+        // save user.
+        
+        const role = await this.generalModel.getRoleFromName(COMPANY_MANAGER).catch(() => {
+            throw new ServerError("Could not sign up new user");
+        });
+        const company = new Company();
+        company.title = companyTitle;
+      
+        const user = new User();
+        user.firstName = userData.firstName || null;
+        user.lastName = userData.lastName || null;
+        user.email = userData.email.toLowerCase() || null;
+        user.phone = userData.phone || null;
+        user.password = bCrypt.hashSync(userData.password, parseInt(process.env.SALT_ROUNDS, 10));
+        user.signupComplete = false;
+        user.isActive = true;
+        user.company = company;
+        user.role = role;
+        return this.userModel.saveUser(user).then(user => {
+            return user;
+        }).catch(error => {
+            throw new ServerError("Could not sign up new user");
+        })
+    }
+
+    async changeUserPassword(userId, currentPwd, newPwd) {      
+        if (!userId) {
+            throw new ServerError("Could not process the request", "No userId provided");
+        }
+        if (!currentPwd) {
+            throw new RequestNotValidError("Current password not specified");
+        }
+
+        let [isValid, errorMessage] = validatePassword(newPwd, "newPassword", currentPwd);
+    
+        if (!isValid) {
+        throw new InputNotValidError(errorMessage);
+        }
+        
+        const user = await this.userModel.getUserById(userId, ["password"]).catch(error => {
+            throw new ServerError("Could not change user password");
+        })
+        if (!user) {
+            throw new ResourceNotFoundError("The user account does not exist");
+        }
+    
+        const isMatch = await bCrypt.compare(currentPwd, user.password).catch(error => {
+            console.error("Error while comparing passwords:", error);
+            throw new ServerError("Could not change user password");
+        })
+        if (!isMatch) {
+            throw new RequestNotValidError("The current password is wrong");
+        }
+        user.password = bCrypt.hashSync(newPwd, parseInt(process.env.SALT_ROUNDS, 10));
+
+        return this.userModel.saveUser(user).then(() => {
+            return {message: "Password changed"};
+        }).catch(() => {
+            throw new ServerError("The password could not be changed");
+        })
       }
     
     // Helper functions to generate tokens

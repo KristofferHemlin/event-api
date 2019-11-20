@@ -5,6 +5,36 @@ import {processFormDataWithoutFile} from '../middleware/fileUploads';
 
 function setUpAuthenticationRoutes(app){
   const authenticationService = new AuthenticationService();
+  
+  /**
+   * @api {get} /tokens/validate Validate access token
+   * @apiDescription Validates current access token in auth header
+   * 
+   * @apiGroup Authentication
+   */ 
+  app.get('/tokens/validate', (req, res) => {
+    const token = req.headers.authorization;
+    authenticationService.validateAccessToken(token).then(() => {
+      res.status(204).send();
+    }).catch(error => {
+      const status = error.status? error.status: 500;
+      res.status(status).send(error);
+    })
+  })
+  
+  /**
+   * @api {get} /deepling/:token Redirect user with a deep link
+   * @apiName RedirectDeepLink
+   * @apiGroup Authentication
+   * 
+   * @apiParam {String} token Token from reset password email.
+   */
+  app.get('/deeplink/:token', (req, res) => {
+    // Needed because evently:// does not become a valid hyperlink.
+    const token = req.params.token;
+    res.redirect('evently://resetpassword/'+token);
+  })
+  
   /**
   * @api {post} /authenticate Authenticate user credentials
   *
@@ -53,22 +83,54 @@ function setUpAuthenticationRoutes(app){
     })
   })
 
-  /**
-   * @api {get} /tokens/validate Validate access token
-   * @apiDescription Validates current access token in auth header
-   * 
-   * @apiGroup Authentication
-   */ 
-  app.get('/tokens/validate', (req, res) => {
-    const token = req.headers.authorization;
-    authenticationService.validateAccessToken(token).then(() => {
-      res.status(204).send();
+      /**
+    * @api {post} /resetpassword Request mail with reset password url
+    *
+    * @apiDescription This route sends an email with reset token to user, if the email is registered.
+    *
+    * @apiName ResetPasswordEmailRequest
+    * @apiGroup Authentication
+    *
+    * @apiParam {String} email The user email
+    */  
+
+   app.post('/resetpassword', (req, res) => {
+    const email = req.body.email;
+    authenticationService.sendResetPasswordEmail(email).then(response => {
+      res.json(response);
     }).catch(error => {
       const status = error.status? error.status: 500;
       res.status(status).send(error);
     })
   })
 
+  /**
+  * @api {post} /resetpassword/:token Reset password for user
+  *
+  * @apiDescription This route changes user password if token is valid.
+  *
+  * @apiName ResetPassword
+  * @apiGroup Authentication
+  *
+  * @apiParam {String} token Token from reset password email
+  * @apiParam {String} password New password
+  */  
+  app.post('/resetpassword/:token', (req, res) => {
+    const token = req.params.token;
+    const password = req.body.password;
+    authenticationService.resetPassword(token, password).then(response => {
+        res.json(response);
+    }).catch(error => {
+      const status = error.status? error.status: 500;
+      res.status(status).send(error);
+    })
+  //   authenticationController.resetPassword(req, res).catch(error => {
+  //     console.error("Error in resetPasswrd: ", error);
+  //     res.status(500).send({
+  //       type: error.name,
+  //       message: "Error while trying to change password"});
+  //   })
+  })
 
   /**
   * @api {post} /sign-up-new-user Sign up a new user
@@ -123,70 +185,6 @@ function setUpAuthenticationRoutes(app){
         res.status(status).send(error);
       })
     });
-
-  
-    /**
-    * @api {post} /resetpassword Request mail with reset password url
-    *
-    * @apiDescription This route sends an email with reset token to user, if the email is registered.
-    *
-    * @apiName ResetPasswordEmailRequest
-    * @apiGroup Authentication
-    *
-    * @apiParam {String} email The user email
-    */  
-
-  app.post('/resetpassword', (req, res) => {
-    const email = req.body.email;
-    authenticationService.sendResetPasswordEmail(email).then(response => {
-      res.json(response);
-    }).catch(error => {
-      const status = error.status? error.status: 500;
-      res.status(status).send(error);
-    })
-  })
-
-
-  /**
-   * @api {get} /deepling/:token Redirect user with a deep link
-   * @apiName RedirectDeepLink
-   * @apiGroup Authentication
-   * 
-   * @apiParam {String} token Token from reset password email.
-   */
-  app.get('/deeplink/:token', (req, res) => {
-    // Needed because evently:// does not become a valid hyperlink.
-    const token = req.params.token;
-    res.redirect('evently://resetpassword/'+token);
-  })
-
-  /**
-  * @api {post} /resetpassword/:token Reset password for user
-  *
-  * @apiDescription This route changes user password if token is valid.
-  *
-  * @apiName ResetPassword
-  * @apiGroup Authentication
-  *
-  * @apiParam {String} token Token from reset password email
-  * @apiParam {String} password New password
-  */  
-  app.post('/resetpassword/:token', (req, res) => {
-    const token = req.params.token;
-    const password = req.body.password;
-    authenticationService.resetPassword(token, password).then(response => {
-        res.json(response);
-    }).catch(error => {
-      const status = error.status? error.status: 500;
-      res.status(status).send(error);
-    })
-  //   authenticationController.resetPassword(req, res).catch(error => {
-  //     console.error("Error in resetPasswrd: ", error);
-  //     res.status(500).send({
-  //       type: error.name,
-  //       message: "Error while trying to change password"});
-  //   })
-  })
 }
 
 export default setUpAuthenticationRoutes;

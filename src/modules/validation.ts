@@ -130,7 +130,7 @@ export function validatePassword(pwd:string, fieldName:string, oldPwd?:string){
     return [isValid, errorMessage]
 }
 
-function createErrorMessage(detailedMessage) {
+export function createErrorMessage(detailedMessage) {
     let prettyFields = {"firstName": "First Name", "lastName": "Last Name", 
         "phone": "Phone", "email": "Email", "title": "Title",
         "startTime": "Start time", "endTime": "End time", "location": "Location"}
