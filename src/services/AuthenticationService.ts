@@ -18,9 +18,9 @@ import {validatePassword} from '../modules/validation';
 import InputNotValidError from '../types/errors/InputNotValidError';
 
 export default class AuthenticationService {
-    userNonReturnableFields = ["isActive", "password", "resetPwdToken", "resetPwdExpireAt", "refreshToken"];
-    userModel = new UserModel();
-    generalModel = new GeneralModel();
+    private userNonReturnableFields = ["isActive", "password", "resetPwdToken", "resetPwdExpireAt", "refreshToken"];
+    private userModel = new UserModel();
+    private generalModel = new GeneralModel();
 
     async validateAccessToken(token) {
         const bearerToken =  token; // Bearer {token}

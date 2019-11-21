@@ -13,10 +13,10 @@ import RequestNotValidError from '../types/errors/RequestNotValidError';
 import UserModel from '../models/UserModel';
 
 export default class ActivityService {
-    possibleFields = ["title", "description", "startTime", "endTime", "location", "goodToKnow"];
-    eventModel = new EventModel();
-    activityModel = new ActivityModel();
-    userModel = new UserModel();
+    private possibleFields = ["title", "description", "startTime", "endTime", "location", "goodToKnow"];
+    private eventModel = new EventModel();
+    private activityModel = new ActivityModel();
+    private userModel = new UserModel();
   
     async getAllActivities() {
       return this.activityModel.getActivities(['participants', 'company']).then(activities => {
@@ -53,8 +53,8 @@ export default class ActivityService {
         return this.userModel.getUsersOn("activities", activityId, [], column, order).then(participants => {
             // If this is too slow, set profileImageUrl to null before returning.
             const participantsWithImages = participants.map(participant => {
-            participant.profileImageUrl = getDataUrl(participant.profileImageUrl, ImageType.MINIATURE);
-            return participant;
+              participant.profileImageUrl = getDataUrl(participant.profileImageUrl, ImageType.MINIATURE);
+              return participant;
             })
             return participantsWithImages;
         })
@@ -130,7 +130,7 @@ export default class ActivityService {
         throw new ResourceNotFoundError("Activity not found.");
       }
   
-      const user = await this.userModel.getUserById(userId, ["events"]).catch(error => {
+      const user = await this.userModel.getUserById(userId, [], ["events"]).catch(error => {
         throw new ServerError("Could not add user to activity", "Error while fetching user");
       })
   
@@ -242,6 +242,27 @@ export default class ActivityService {
         })
         }
       return;
+    }
+
+    async removeActivityParticipant(activityId: number, userId: number) {
+      const activity = await this.activityModel.getActivityById(activityId, ["participants"]);
+      if(!activity){
+        throw new ResourceNotFoundError("The activity does not exist");
+      }
+
+      const user: User = activity.participants.find(participant => 
+          participant.id.toString() === userId.toString())
+      if(!user){
+          return; // Throw error here instead??
+      }
+      
+      const idx = activity.participants.indexOf(user);
+      if (idx > -1) {
+          activity.participants.splice(idx, 1);
+      }
+      return this.activityModel.saveActivity(activity).catch(() => {
+          throw new ServerError("Could not remove participant from activity");
+      });
     }
   
     // Should reuse this when push should be sent when events updates as well. 

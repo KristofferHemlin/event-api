@@ -11,6 +11,11 @@ export function uplodActivityCoverImage(req, res, next) {
     uploadFile(req, res, next, storage, 50); 
 }
 
+export function uploadEventCoverImage(req, res, next) {
+  const storage = getStorage("public/original", "eventImage");
+  uploadFile(req, res, next, storage, 50);
+}
+
 export function processFormDataWithoutFile(req, res, next) {
   multer().none()(req, res, (err) => {
     if (err) {
@@ -87,14 +92,12 @@ function handleMulterError(error) {
       errorMessage = {
         type: error.name,
         message: "Could not upload the image",
-        details: error,
       }
     }
   } else {
     errorMessage = {
       type: error.name,
       message: "Could not parse the input data",
-      details: error,
     }
   }
   return errorMessage;

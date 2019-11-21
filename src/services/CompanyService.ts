@@ -4,10 +4,11 @@ import UserModel from "../models/UserModel";
 import {validateFields, createErrorMessage} from "../modules/validation";
 import Company from "../entities/company.entity";
 import InputNotValidError from "../types/errors/InputNotValidError";
+import { removeImages } from "../modules/fileHelpers";
 
 export default class CompanyService {
-    companyModel = new CompanyModel();
-    userModel = new UserModel();
+    private companyModel = new CompanyModel();
+    private userModel = new UserModel();
 
     async getCompanies(){
         return this.companyModel.getAllCompanies(['employees', 'events', 'activities']).catch(() => {
@@ -61,7 +62,23 @@ export default class CompanyService {
     }
 
     async deleteCompany(companyId) {
-        return this.companyModel.deleteCompany(companyId).catch(error => {
+
+        const companyToDelete = await this.companyModel.getCompanyById(companyId, ["employees", "events", "activities"]).catch(() => {
+            throw new ServerError("Could not delete company", "Error while fetching company");
+        })
+
+        return this.companyModel.deleteCompany(companyId).then(() => {
+            companyToDelete.employees.forEach(employee => {
+                removeImages(employee.profileImageUrl);
+            });
+            companyToDelete.events.forEach(event => {
+                removeImages(event.coverImageUrl);
+            })
+            companyToDelete.activities.forEach(activity => {
+                removeImages(activity.coverImageUrl);
+            })
+            return;
+        }).catch(() => {
             throw new ServerError("Could not delete company");
         })
     }

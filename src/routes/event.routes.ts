@@ -1,9 +1,11 @@
 import * as express from 'express';
-import * as eventController from '../controllers/event.controller';
 import isAuthenticated from '../middleware/isAuthenticated';
+import EventService from '../services/EventService';
+import { getSortingParams } from '../modules/helpers';
+import { uploadEventCoverImage } from '../middleware/fileUploads';
 
 function setUpEventRoutes(app) {
-
+  const eventService = new EventService();
 
   // Middleware
   app.use('/events', (req, res, next) => {
@@ -14,6 +16,26 @@ function setUpEventRoutes(app) {
     isAuthenticated(req, res, next);
   })
 
+    /**
+  * @api {get} /event Get all events
+  * @apiDescription This route fetches all events of a company if your an Admin
+  * or Company Manager. If you're a Company member you will only get the events
+  * that you are participating in. ( Not yet implemented )
+  * @apiPermission Authenticated - Admin
+  * @apiName GetAllEvents
+  * @apiGroup Event
+  */
+
+  // Fetch all events.
+  app.get('/events', (req: express.Request, res: express.Response) => {
+    eventService.getEvents().then(events => {
+      res.json(events);
+    }).catch(error => {
+      const status = error.status? error.status : 500;
+      res.status(status).send(error);
+    })
+  });
+
   /**
    * @api {get} Fetch event by its id
    * @apiName GetEventById
@@ -22,14 +44,79 @@ function setUpEventRoutes(app) {
    * @apiParam {number} eventId Unique identifier for the parent company.
    */
   app.get('/events/:eventId', (req, res) => {
-    eventController.getEventById(req, res).catch(error => {
-      console.error("Error in getEventById: ", error);
-      res.status(500).send({
-        type: error.name, 
-        message: "Error while fetching event"
-      })
+    const eventId = req.params.eventId;
+    eventService.getEvent(eventId).then(event => {
+      res.json(event);
+    }).catch(error => {
+      const status = error.status? error.status : 500;
+      res.status(status).send(error);
     })
   })
+
+    /**
+   * @api {get} /events/:eventId/users
+   * @apiDescription This route fetches all user for the specified event. Specify sort order by /events/:eventId/users?sort=firstName:asc
+   * @apiName GetEventParticipants
+   * @apiGroup Event
+   * @apiParam {Number} eventId Unique identifier for the event
+   */
+
+  // Fetch all users on an event
+  app.get("/events/:eventId/users", (req, res) => {
+    const eventId = req.params.eventId;
+    const sortingParams = getSortingParams(req);
+    eventService.getEventParticipants(eventId, sortingParams).then(participants => {
+      res.json(participants);
+    }).catch(error => {
+      const status = error.status? error.status : 500;
+      res.status(status).send(error);
+    });
+  });
+
+  // New version that implements pagination
+  /**
+   * @api {get} /v1/events/:eventId/users
+   * @apiDescription This route fetches all user for the specified event. 
+   * Query params: sort=column:order, offset=record to skip (number), limit=limit (default 100) of number of records returned (number)
+   *  search=text to match firstName, lastName or company department with
+   * Example: /v1/events/:eventId/users?sort=firstName:asc&offset=3&limit=10
+   * @apiName GetEventParticipantsV1
+   * @apiGroup Event
+   * @apiParam {Number} eventId Unique identifier for the event
+   */
+  app.get("/v1/events/:eventId/users", (req, res) => {
+    const eventId = req.params.eventId;
+    const sortingParams = getSortingParams(req);
+    const limit = req.query.limit? parseInt(req.query.limit): 100;
+    const offset = req.query.offset? parseInt(req.query.offset): 0;
+    const search = req.query.search;
+    const requestPath = req.url;
+    eventService.getEventParticipantsV1(eventId, sortingParams, limit, offset, search, requestPath).then(message => {
+      res.json(message);
+    }).catch(error => {
+      const status = error.status? error.status : 500;
+      res.status(status).send(error);
+    })
+  })
+
+    /**
+   * @api {get} /events/:eventId/activities
+   * @apiDescription This route fetches all activities for the specified event.
+   * @apiName GetEventActivities
+   * @apiGroup Event
+   * 
+   * @apiParam {Number} eventId Unique identifier for the event.
+   */
+
+  app.get("/events/:eventId/activities", (req, res) => {
+    const eventId = req.params.eventId;
+    eventService.getEventActivities(eventId).then(activities => {
+      res.json(activities)
+    }).catch(error => {
+      const status = error.status? error.status : 500;
+      res.status(status).send(error);
+    })
+  });
 
   /**
   * @api {post} /event Create a new event
@@ -47,17 +134,35 @@ function setUpEventRoutes(app) {
   */
 
   // Create a new event.
-  app.post('/events', (req: express.Request, res: express.Response) => {
-    eventController.createEvent(req, res).catch(error => {
-      console.error("Error in creteEvent: ", error);
-      res.status(500).send({
-        type: error.name, 
-        message: "Error while creating event"
-      })
-    });
+  app.post('/events', uploadEventCoverImage, (req: express.Request, res: express.Response) => {
+    const {companyId, imageUrl, ...newEvent} = req.body;
+    eventService.createEvent(newEvent, companyId, imageUrl).then(event => {
+      res.json(event);
+    }).catch(error => {
+      const status = error.status? error.status : 500;
+      res.status(status).send(error);
+    })
   });
 
+  /**
+  * @api {post} /event/add-user Add a user to an event
+  * @apiDescription Adds
+  * @apiPermission Authenticated User - Admin, Company Manager (or user set to organizer of the event.)
+  * @apiName AddAUserToEvent
+  * @apiGroup Event
+  */
 
+  // Add a user to an Event.
+  app.post('/events/:eventId/users/:userId', (req: express.Request, res: express.Response) => {
+    const eventId = req.params.eventId;
+    const userId = req.params.userId;
+    eventService.addEventParticipant(eventId, userId).then(response => {
+      res.json(response);
+    }).catch(error => {
+      const status = error.status? error.status : 500;
+      res.status(status).send(error);
+    });
+  })
 
   /**
   * @api {put} /event Update an event
@@ -76,138 +181,16 @@ function setUpEventRoutes(app) {
   */
 
   // Update an event.
-  app.put('/events/:eventId', (req: express.Request, res: express.Response) => {
-    eventController.updateEvent(req, res).catch(error => {
-      console.error("Error in updateEvent: ", error);
-      res.status(500).send({
-        type: error.name,
-        message: "Error while updating event"
-      })
+  app.put('/events/:eventId', uploadEventCoverImage, (req: express.Request, res: express.Response) => {
+    const eventId = req.params.eventId;
+    const {imageUrl, ...eventData} = req.body;
+    eventService.updateEvent(eventId, eventData, imageUrl).then(event => {
+      res.json(event);
+    }).catch(error => {
+      const status = error.status? error.status : 500;
+      res.status(status).send(error);
     });
   })
-
-
-
-  /**
-  * @api {get} /event Get all events
-  * @apiDescription This route fetches all events of a company if your an Admin
-  * or Company Manager. If you're a Company member you will only get the events
-  * that you are participating in. ( Not yet implemented )
-  * @apiPermission Authenticated - All roles
-  * @apiName GetAllEvents
-  * @apiGroup Event
-  */
-
-  // Fetch all events.
-  app.get('/events', (req: express.Request, res: express.Response) => {
-    eventController.getAllEvents(req, res).catch(error => {
-      console.error("Error in getAllEvents: ", error);
-      res.status(500).send({
-        type: error.name,
-        message: "Error while fetching all events"
-      })
-    });
-  });
-
-  /**
-   * @api {get} /events/:eventId/users
-   * @apiDescription This route fetches all user for the specified event. Specify sort order by /events/:eventId/users?sort=firstName:asc
-   * @apiName GetEventParticipants
-   * @apiGroup Event
-   * @apiParam {Number} eventId Unique identifier for the event
-   */
-
-  // Fetch all users on an event
-  app.get("/events/:eventId/users", (req, res) => {
-    eventController.getEventParticipants(req, res).catch(error => {
-      console.error("Error in getEventParticipants: ", error);
-      res.status(500).send({
-        type: error.name,
-        message: "Error while fetching event participants"
-      })
-    })
-  });
-
-  // New version that implements pagination
-  /**
-   * @api {get} /v1/events/:eventId/users
-   * @apiDescription This route fetches all user for the specified event. 
-   * Query params: sort=column:order, offset=record to skip (number), limit=limit (default 100) of number of records returned (number)
-   *  search=text to match firstName, lastName or company department with
-   * Example: /v1/events/:eventId/users?sort=firstName:asc&offset=3&limit=10
-   * @apiName GetEventParticipantsV1
-   * @apiGroup Event
-   * @apiParam {Number} eventId Unique identifier for the event
-   */
-  app.get("/v1/events/:eventId/users", (req, res) => {
-    eventController.getEventParticipantsV1(req, res).catch(error => {
-      console.error("Error in getEventParticipants:", error);
-      res.status(500).send({
-        type: error.name,
-        message: "Error while fetching event participants"
-      })
-    })
-  })
-
-  /**
-  * @api {get} /events/:eventId/users/:userId
-  * @apiDescription This route fetches a single user for the specified event.
-  * @apiName GetSingleEventParticipant
-  * @apiGroup Event
-  * @apiParam {Number} eventId Unique identifier for the event
-  * @apiParam {Number} userId Unique identifier for the event
-  */
-
-  app.get("/events/:eventId/users/:userId", (req, res) => {
-    eventController.getEventParticipant(req, res).catch(error => {
-      console.error("Error in getEventParticipant: ", error);
-      res.status(500).send({
-        type: error.name,
-        message: "Error while fetching error participant"
-      })
-    })
-  });
-
-
-  /**
-   * @api {get} /events/:eventId/activities
-   * @apiDescription This route fetches all activities for the specified event.
-   * @apiName GetEventActivities
-   * @apiGroup Event
-   * 
-   * @apiParam {Number} eventId Unique identifier for the event.
-   */
-
-   app.get("/events/:eventId/activities", (req, res) => {
-     eventController.getEventActivities(req, res).catch(error => {
-       console.error("Error in getEventActivities: ", error)
-       res.status(500).send({
-         type: error.name,
-         message: "Error while fetching event activities"
-       })
-     })
-    });
-
-  /**
-  * @api {post} /event/add-user Add a user to an event
-  * @apiDescription Adds
-  * @apiPermission Authenticated User - Admin, Company Manager (or user set to organizer of the event.)
-  * @apiName AddAUserToEvent
-  * @apiGroup Event
-  */
-
-  // Add a user to an Event.
-  app.post('/events/add-user', (req: express.Request, res: express.Response) => {
-    eventController.addUserToEvent(req, res).catch(error => {
-      console.error("Error in addUserToEvent: ", error);
-      res.status(500).send({
-        type: error.name,
-        message: "Error while adding user to event"
-      })
-    });
-  })
-
-
 
   /**
   * @api {delete} /event/remove-user Remove a user from an event
@@ -220,13 +203,14 @@ function setUpEventRoutes(app) {
   */
 
   // Remove a user from an event.
-  app.delete('/events/remove-user', (req: express.Request, res: express.Response) => {
-    eventController.removeUserFromEvent(req, res).catch(error => {
-      console.error("Error in removeUserFromEvent: ", error);
-      res.status(500).send({
-        type: error.name,
-        message: "Error while removing user from event"
-      })
+  app.delete('/events/:eventId/users/:userId', (req: express.Request, res: express.Response) => {
+    const eventId = parseInt(req.params.eventId);
+    const userId = parseInt(req.params.userId);
+    eventService.removeEventParticipant(eventId, userId).then(() => {
+      res.status(204).send();
+    }).catch(error => {
+      const status = error.status? error.status : 500;
+      res.status(status).send(error);
     });
   })
 
@@ -243,13 +227,13 @@ function setUpEventRoutes(app) {
 
   // Delete an event.
   app.delete('/events/:eventId', (req: express.Request, res: express.Response) => {
-    eventController.deleteEvent(req, res).catch(error => {
-      console.error("Error in deleteEvent: ", error);
-      res.status(500).send({
-        type: error.name,
-        message: "Error while deleting event"
-      })
-    });
+    const eventId = req.params.eventId;
+    eventService.deleteEvent(eventId).then(() => {
+      res.status(204).send();
+    }).catch(error => {
+      const status = error.status? error.status : 500;
+      res.status(status).send(error);
+    })
   })
 
   /**
@@ -262,13 +246,13 @@ function setUpEventRoutes(app) {
   */
   // Delete event cover image
   app.delete('/events/:eventId/coverimage', (req, res) => {
-    eventController.deleteCoverImage(req, res).catch(error => {
-      console.error("Error in deleteCoverImage: ", error);
-      res.status(500).send({
-        type: error.name,
-        message: "Error while deleting cover image"
-      })
-    })
+    const eventId = req.params.eventId;
+    eventService.deleteCoverImage(eventId).then(() => {
+      res.status(204).send();
+    }).catch(error => {
+      const status = error.status? error.status : 500;
+      res.status(status).send(error);
+    });
   })
 
 }

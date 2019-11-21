@@ -91,7 +91,7 @@ export default class UserModel {
             additionalFields.forEach(field => {
                 queryBuilder.addSelect("User."+field)});
             additionalRelations.forEach(relation => {
-                queryBuilder.innerJoinAndSelect("User."+relation, relation)
+                queryBuilder.leftJoinAndSelect("User."+relation, relation)
             });
             return queryBuilder.where(`User.${type} = :identifier`, { identifier: typeIdentifier })
                 .getOne()
@@ -109,7 +109,7 @@ export default class UserModel {
         let queryBuilder = createQueryBuilder(User)
         queryBuilder.innerJoin("User."+table, table, table+".id=:id", {id: id})
         additionalRelations.forEach(relation => {
-            queryBuilder.innerJoinAndSelect("User."+relation, relation)
+            queryBuilder.leftJoinAndSelect("User."+relation, relation)
         }) 
 
         if (searchValue) {

@@ -401,7 +401,7 @@ export async function firstUpdate(req, res) {
         return
       });
     if (!user) {
-      res.status(400).send({message: "The user does not exists."})
+      res.status(400).send({message: "The user does not exist."})
       return
     }
     user.refreshToken = null;

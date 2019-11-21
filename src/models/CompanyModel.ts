@@ -1,7 +1,8 @@
-import { getRepository, createQueryBuilder, DeleteResult } from 'typeorm';
+import { getRepository} from 'typeorm';
 
 import Company from '../entities/company.entity';
 import Event from '../entities/event.entity';
+import Activity from '../entities/activity.entity';
 
 export default class CompanyModel {
 
@@ -16,8 +17,8 @@ export default class CompanyModel {
         })
     }
 
-    getCompanyById(companyId: number): Promise<Company>{
-        return getRepository(Company).findOne({ id: companyId })
+    getCompanyById(companyId: number, additionalRelations: string[]=[]): Promise<Company>{
+        return getRepository(Company).findOne({ id: companyId }, {relations: additionalRelations})
             .then(company => {
                 return company;
             })
@@ -40,6 +41,18 @@ export default class CompanyModel {
             console.error("Error while fetching company events:", error);
             return Promise.reject(error);
             })
+    }
+
+    getCompanyActivities(companyId: number): Promise<Activity[]> {
+        return getRepository(Activity).createQueryBuilder()
+            .innerJoin("Activity.event", "event")
+            .innerJoin("event.company", "company")
+            .where("company.id=:companyId", {companyId: companyId})
+            .getMany()
+            .catch(error => {
+                console.log("Error while fetching company activities")
+                return Promise.reject(error);
+            });
     }
 
     saveCompany(company: Company): Promise<Company> {
