@@ -14,7 +14,7 @@ class PlayerId {
     @PrimaryColumn()
     id: string
 
-    @ManyToOne(type => User, user => user.playerIds, {nullable: false})
+    @ManyToOne(type => User, user => user.playerIds, {nullable: false, onDelete: "CASCADE"})
     user: User 
 }
 

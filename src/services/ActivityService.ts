@@ -3,14 +3,14 @@ import Activity from '../entities/activity.entity';
 import User from '../entities/user.entity';
 import ActivityUpdateLog from '../entities/activitylog.entity';
 import {validateActivity} from '../modules/validation';
-import { removeImages, getDataUrl, ImageType } from '../modules/fileHelpers';
-import { cleanInput, getPagingResponseMessage, updateEntityFields } from '../modules/helpers';
+import { cleanInput, getPagingResponseMessage, updateEntityFields, removeImages, getDataUrl } from '../modules/helpers';
 import ServerError from '../types/errors/ServerError';
 import ResourceNotFoundError from '../types/errors/ResourceNotFoundError';
 import InputNotValidError from '../types/errors/InputNotValidError';
 import ActivityModel from '../models/ActivityModel';
 import RequestNotValidError from '../types/errors/RequestNotValidError';
 import UserModel from '../models/UserModel';
+import {ImageType} from "../types/ImageType";
 
 export default class ActivityService {
     private possibleFields = ["title", "description", "startTime", "endTime", "location", "goodToKnow"];
@@ -215,7 +215,7 @@ export default class ActivityService {
   
     async deleteActivity(activityId: number) {
       return this.activityModel.deleteActivity(activityId).then(deletedActivity => {
-        if (deletedActivity.coverImageUrl) {
+        if (deletedActivity) {
           removeImages(deletedActivity.coverImageUrl);
         }
       }).catch(error => {

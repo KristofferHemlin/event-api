@@ -4,7 +4,7 @@ import UserModel from "../models/UserModel";
 import {validateFields, createErrorMessage} from "../modules/validation";
 import Company from "../entities/company.entity";
 import InputNotValidError from "../types/errors/InputNotValidError";
-import { removeImages } from "../modules/fileHelpers";
+import { removeImages } from "../modules/helpers";
 
 export default class CompanyService {
     private companyModel = new CompanyModel();
@@ -66,6 +66,10 @@ export default class CompanyService {
         const companyToDelete = await this.companyModel.getCompanyById(companyId, ["employees", "events", "activities"]).catch(() => {
             throw new ServerError("Could not delete company", "Error while fetching company");
         })
+
+        if (!companyToDelete){
+            return;
+        }
 
         return this.companyModel.deleteCompany(companyId).then(() => {
             companyToDelete.employees.forEach(employee => {

@@ -41,9 +41,12 @@ export default class ActivityModel {
   
   deleteActivity(activityId: number): Promise<Activity> {
     return getRepository(Activity).findOne({id: activityId}).then(activity => {
-      return getRepository(Activity).remove(activity).then(_ => {
-        return activity;
-      })
+      if (activity) {
+        return getRepository(Activity).remove(activity).then(_ => {
+          return activity;
+        })
+      }
+      return;
     }).catch(error => {
       console.error("Error while deleting activity:", error);
       return Promise.reject(error);

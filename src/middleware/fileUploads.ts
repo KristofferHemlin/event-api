@@ -1,7 +1,7 @@
 import * as multer from 'multer';
 
 import {ImageType} from "../types/ImageType";
-import { removeAllFiles, removeFile } from '../modules/fileHelpers';
+import { removeAllFiles, removeFile } from '../modules/helpers';
 
 const FILETYPES = ['jpg', 'jpeg', 'png'];
 const MAXSIZE = 10;
@@ -14,6 +14,11 @@ export function uplodActivityCoverImage(req, res, next) {
 export function uploadEventCoverImage(req, res, next) {
   const storage = getStorage("public/original", "eventImage");
   uploadFile(req, res, next, storage, 50);
+}
+
+export function uploadUserProfileImage(req, res, next) {
+  const storage = getStorage("public/original", "profileImage");
+  uploadFile(req, res, next, storage, 40);
 }
 
 export function processFormDataWithoutFile(req, res, next) {

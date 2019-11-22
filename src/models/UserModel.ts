@@ -2,9 +2,19 @@ import { getRepository, createQueryBuilder } from 'typeorm';
 
 import User from '../entities/user.entity';
 import PlayerId from '../entities/playerId.entity';
-import { rejects } from 'assert';
+import Activity from "../entities/activity.entity";
+import Event from "../entities/event.entity";
+import ActivityUpdateLog from '../entities/activitylog.entity';
 
 export default class UserModel {
+
+    getAllUsers(additionalRelations: string[]=[]): Promise<User[]> {
+        return getRepository(User).find({ relations: additionalRelations, order: { id: 'ASC' } })
+            .catch(error => {
+                console.error("Error while fetching all users:", error)
+                return Promise.reject(error);
+            })
+    }
 
     getUserById(userId: number, additionalFields: string[]=[], additionalRelations: string[]=[]): Promise<User> {
         return this.getUserBy("id", userId.toString(), additionalFields, additionalRelations);
@@ -18,42 +28,36 @@ export default class UserModel {
         return this.getUserBy("resetPwdToken", token, additionalFields, additionalRelations);
     }
 
-    saveUser(user: User): Promise<User> {
-        return getRepository(User).save(user).catch(error => {
-            console.error("Error while saving user:", error);
-            return Promise.reject(error);
-        })
-    }
-
+    
     // Find a good term for type for activities and events
     getUsersOn(relationType: string, relationId: number, additionalRelations: string[]=[], sortColumn="id", sortOrder="ASC"): Promise<User[]> {
         try {
             return this.fetchParticipantBuilder(relationType, relationId, additionalRelations, "")
-                .orderBy(`User.${sortColumn}`, sortOrder.toUpperCase()==="ASC"? "ASC": "DESC")
+            .orderBy(`User.${sortColumn}`, sortOrder.toUpperCase()==="ASC"? "ASC": "DESC")
                 .getMany()
                 .catch(error => {
-                console.error(`Error while fetching users for ${relationType}:`, error);
+                    console.error(`Error while fetching users for ${relationType}:`, error);
                 return Promise.reject(error);
-                })
+            })
         } catch (error) {
             console.error(`Error while fetching users for ${relationType}:`, error);
             return Promise.reject(error);
         }
       }
     
-    getUsersOnV1(relationType: string, relationId: number, additionalRelations, sortColumn, sortOrder, searchParam, limit, offset): Promise<User[]> {        
+      getUsersOnV1(relationType: string, relationId: number, additionalRelations, sortColumn, sortOrder, searchParam, limit, offset): Promise<User[]> {        
         try {
             return this.fetchParticipantBuilder(relationType, relationId, additionalRelations, searchParam)
-                .offset(offset)
-                .limit(limit)
-                .orderBy(`User.${sortColumn}`, sortOrder.toUpperCase()=="ASC"? "ASC": "DESC")
-                .getMany()
-                .then((participants: User[]) => {
-                    return participants;
-                }).catch(error => {
-                    console.error(`Error while fetching users for ${relationType}:`, error);
-                    return Promise.reject(error);
-                })
+            .offset(offset)
+            .limit(limit)
+            .orderBy(`User.${sortColumn}`, sortOrder.toUpperCase()=="ASC"? "ASC": "DESC")
+            .getMany()
+            .then((participants: User[]) => {
+                return participants;
+            }).catch(error => {
+                console.error(`Error while fetching users for ${relationType}:`, error);
+                return Promise.reject(error);
+            })
         } catch (error) {
             console.error(`Error while fetching users for ${relationType}:`, error);
             return Promise.reject(error);
@@ -63,16 +67,107 @@ export default class UserModel {
     getUsersCount(table: string, id: number, searchValue): Promise<number> {
         try {
             return this.fetchParticipantBuilder(table, id, [], searchValue).getCount()
-                .catch(error => {
-                    console.error("Error while counting participants:", error);
-                    return Promise.reject(error);
-                })
+            .catch(error => {
+                console.error("Error while counting participants:", error);
+                return Promise.reject(error);
+            })
         } catch (error) {
             console.log(`Error while fetching participants for ${table}`, error);
             return Promise.reject(error);
         }
     }
 
+    getUserEvents(userId): Promise<Event[]> {
+        return createQueryBuilder(Event)
+            .innerJoin("Event.participants", "participants")
+            .where("participants.id=:userId", { userId: userId })
+            .orderBy("Event.id", "ASC")
+            .getMany()
+            .then(events => {
+                return events;
+            }).catch(error => {
+                console.error("Error while fetching user events")
+                return Promise.reject(error);
+            })
+    }
+
+    getUserEventActivities(userId: number, eventId: number): Promise<Activity[]> {
+        return createQueryBuilder(Activity)
+            .innerJoin("Activity.participants", "participants", "participants.id=:userId", { userId: userId })
+            .where("Activity.event=:eventId", { eventId: eventId })
+            .orderBy("Activity.id", "ASC")
+            .getMany()
+            .then(activities => {
+                return activities;
+            }).catch(error => {
+                console.error("Error while fetching event activities for user:", error);
+                return Promise.reject(error);
+            })
+    }
+
+    getActivityUpdateLogs(userId: number, limit: number): Promise<ActivityUpdateLog[]> {
+        return createQueryBuilder(ActivityUpdateLog)
+            .innerJoin("ActivityUpdateLog.activity", "activity")
+            .innerJoin("activity.participants", "user")
+            .where("user.id=:userId", { userId:userId })
+            .select("MAX(ActivityUpdateLog.createdAt)", "updatetime")
+            .addSelect("activity")
+            .groupBy("activity.id")
+            .limit(limit)
+            .orderBy("updatetime", "DESC")
+            .getRawMany()
+            .then(rawOutput => {
+                const updateData = rawOutput.map(updateLog => {
+                    let activityLog = new ActivityUpdateLog();
+                    const {updatetime, ...activityRaw} = updateLog;
+                    let activity = Object.keys(activityRaw).reduce((activity, key) => {
+                        const newKey = key.replace("activity_", "");
+                        activity[newKey] = activityRaw[key];
+                        return activity;
+                      }, new Activity());
+                    activityLog.createdAt = updatetime;
+                    activityLog.activity = activity;
+                    return activityLog; // Could make a v1 and return this better
+                });
+                return updateData;
+            }).catch(error => {
+                console.error("Error while fetching activity notifications:", error);
+                return Promise.reject(error);
+            })
+    }
+
+    saveUser(user: User): Promise<User> {
+        return getRepository(User).save(user).catch(error => {
+            console.error("Error while saving user:", error);
+            return Promise.reject(error);
+        })
+    }
+
+    addPlayerId(playerId: string, user: User) {
+        const playerIdRecord = new PlayerId();
+        playerIdRecord.id = playerId;
+        playerIdRecord.user = user;
+
+        return getRepository(PlayerId).save(playerIdRecord).catch(error => {
+            console.error("Error while saving playerId:", error);
+            return Promise.reject(error);
+        })
+    }
+
+    deleteUser(userId: number): Promise<User> {
+        return getRepository(User).findOne({id: userId}).then(user => {
+            if (user) {
+                return getRepository(User).remove(user).then(_ => {
+                  return user;
+                })
+            }
+            return; 
+          }).catch(error => {
+            console.error("Error while deleting user:", error);
+            return Promise.reject(error);
+          })
+    }
+    
     deletePlayerIds(playerIds: string[]): Promise<void>{
         return createQueryBuilder(PlayerId)
             .delete()

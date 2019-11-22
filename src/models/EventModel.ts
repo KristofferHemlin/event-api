@@ -44,9 +44,12 @@ export default class EventModel {
 
     deleteEvent(eventId: number): Promise<Event> {
         return getRepository(Event).findOne({id: eventId}).then(event => {
-            return getRepository(Event).remove(event).then(_ => {
-              return event;
-            })
+            if (event) {
+                return getRepository(Event).remove(event).then(_ => {
+                  return event;
+                })
+            }
+            return;
           }).catch(error => {
             console.error("Error while deleting event:", error);
             return Promise.reject(error);

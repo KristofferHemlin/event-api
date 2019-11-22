@@ -5,9 +5,8 @@ import UserModel from "../models/UserModel";
 import CompanyModel from "../models/CompanyModel";
 import ServerError from "../types/errors/ServerError";
 import RequestNotValidError from "../types/errors/RequestNotValidError";
-import {getDataUrl, removeImages} from "../modules/fileHelpers";
 import {ImageType} from "../types/ImageType";
-import {getPagingResponseMessage, cleanInput, updateEntityFields} from "../modules/helpers";
+import {getPagingResponseMessage, cleanInput, updateEntityFields, getDataUrl, removeImages} from "../modules/helpers";
 import ResourceNotFoundError from "../types/errors/ResourceNotFoundError";
 import {validateEvent} from "../modules/validation";
 import InputNotValidError from "../types/errors/InputNotValidError";
@@ -21,13 +20,22 @@ export default class EventService {
     private possibleFields = ["title", "description", "startTime", "endTime", "location", "goodToKnow"];
     
     async getEvents() {
-        return this.eventModel.getAllEvents(['activities', 'company']).catch(() => {
+        return this.eventModel.getAllEvents(['activities', 'company']).then(events => {
+            const eventsWithImages = events.map(event => {
+                event.coverImageUrl = getDataUrl(event.coverImageUrl, ImageType.MINIATURE);
+                return event;
+            })
+            return eventsWithImages;
+        }).catch(() => {
             throw new ServerError("Could not fetch events");
         })
     }
 
     async getEvent(eventId: number) {
-        return this.eventModel.getEventById(eventId, ["activities", "company"]).catch(() => {
+        return this.eventModel.getEventById(eventId, ["activities", "company"]).then(event => {
+            event.coverImageUrl = getDataUrl(event.coverImageUrl, ImageType.COMPRESSED);
+            return event;
+        }).catch(() => {
             throw new ServerError("Could not fetch event");
         });
     }
