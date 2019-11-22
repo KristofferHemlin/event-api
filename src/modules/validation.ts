@@ -145,10 +145,10 @@ export function createErrorMessage(detailedMessage) {
         message = messageFields.reduce((message, field) => {
             return message + ", "+ prettyFields[field]
         }, messageStart)
-        message += " and "+prettyFields[lastField] + " fields are wrong"
+        message += " and "+prettyFields[lastField] + " fields are incorrect"
 
     } else if (messageFields.length === 1) {
-        message = "The "+prettyFields[messageFields[0]]+ " field is wrong"
+        message = "The "+prettyFields[messageFields[0]]+ " field is incorrect"
     } else {
         message = ""
     }

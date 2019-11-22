@@ -61,7 +61,7 @@ function uploadFile(req, res, next, storage, compressionRate){
             }
         
             // otherwise, return error
-            return cb({ message: 'Only ' + FILETYPES.join(", ") + ' files are allowed!' });
+            return cb({ message: 'Only ' + FILETYPES.join(", ") + ' files are allowed!', field: "image", code: "NOT_SUPPORTED_TYPE"});
         }
     }).single('image')(req, res, async (err) => {
         if (err) {
@@ -92,6 +92,11 @@ function handleMulterError(error) {
       errorMessage = {
         type: error.name,
         message: `Image size too large, must be smaller than ${MAXSIZE} MB`
+      }
+    } else if (error.code === "NOT_SUPPORTED_TYPE") {
+      errorMessage = {
+        type: error.name,
+        message: error.message
       }
     } else {
       errorMessage = {
