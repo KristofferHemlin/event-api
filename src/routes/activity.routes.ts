@@ -1,11 +1,12 @@
 import * as express from 'express';
 import isAuthenticated from '../middleware/isAuthenticated';
-import {uplodActivityCoverImage} from '../middleware/fileUploads'
+import {uploadActivityCoverImage, compressCoverImage} from '../middleware/fileUploads'
 import ActivityService from "../services/ActivityService";
 import ApplicationError from "../types/errors/ApplicationError";
 import Activity from '../entities/activity.entity';
 import User from '../entities/user.entity';
-import { getSortingParams } from '../modules/helpers';
+import { getSortingParams, removeImages } from '../modules/helpers';
+import { cleanAndValidateActivity } from '../middleware/inputValidation';
 
 function setUpActivityRoutes(app) {
   const activityService = new ActivityService();
@@ -119,13 +120,14 @@ function setUpActivityRoutes(app) {
   * @apiParam {String} goodToKnow Things that is good to know about the activity
   */
 
-  app.post('/activities', uplodActivityCoverImage, 
+  app.post('/activities', uploadActivityCoverImage, cleanAndValidateActivity, compressCoverImage,
   async (req, res) => {
     const {eventId, imageUrl, ...newActivity} = req.body;
     
     activityService.createActivity(newActivity, eventId, imageUrl).then( activity => {
       res.json(activity);
     }).catch((error: ApplicationError) => {
+      removeImages(imageUrl);
       const status = error.status? error.status : 500;
       res.status(status).send(error);
     });
@@ -141,7 +143,7 @@ function setUpActivityRoutes(app) {
   * @apiParam {Number} userId The unique identifier of the user.
   */
 
-  app.post('/activities/:activityId/users/:userId', (req: express.Request, res: express.Response) => {
+  app.put('/activities/:activityId/users/:userId', (req: express.Request, res: express.Response) => {
     const activityId = req.params.activityId;
     const userId = req.params.userId;
     activityService.addParticipant(activityId, userId).then(message => {
@@ -168,13 +170,14 @@ function setUpActivityRoutes(app) {
   * @apiParam {String} goodToKnow Things that is good to know about the activity
   */
 
-  app.put('/activities/:activityId', uplodActivityCoverImage,
+  app.put('/activities/:activityId', uploadActivityCoverImage, cleanAndValidateActivity, compressCoverImage,
   (req, res) => {
     const activityId = req.params.activityId;
     const {imageUrl, ...newActivity} = req.body;
     activityService.updateActivity(activityId, newActivity, imageUrl).then(activity => {
       res.json(activity);
     }).catch(error => {
+      removeImages(imageUrl);
       const status = error.status? error.status : 500;
       res.status(status).send(error);
     })

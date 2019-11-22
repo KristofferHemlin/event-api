@@ -6,19 +6,19 @@ import { removeAllFiles, removeFile } from '../modules/helpers';
 const FILETYPES = ['jpg', 'jpeg', 'png'];
 const MAXSIZE = 10;
 
-export function uplodActivityCoverImage(req, res, next) {
+export function uploadActivityCoverImage(req, res, next) {
     const storage = getStorage("public/original", "activityImage");
-    uploadFile(req, res, next, storage, 50); 
+    uploadFile(req, res, next, storage); 
 }
 
 export function uploadEventCoverImage(req, res, next) {
   const storage = getStorage("public/original", "eventImage");
-  uploadFile(req, res, next, storage, 50);
+  uploadFile(req, res, next, storage);
 }
 
 export function uploadUserProfileImage(req, res, next) {
   const storage = getStorage("public/original", "profileImage");
-  uploadFile(req, res, next, storage, 40);
+  uploadFile(req, res, next, storage);
 }
 
 export function processFormDataWithoutFile(req, res, next) {
@@ -34,6 +34,26 @@ export function processFormDataWithoutFile(req, res, next) {
   });
 }
 
+export function compressProfileImage(req, res, next) {
+  performCompression(req, res, next, 40);
+}
+
+export function compressCoverImage(req, res, next) {
+  performCompression(req, res, next, 50);
+}
+
+async function performCompression(req, res, next, compressionRate) {
+  const {pathToSave, newFilePaths, compressionDone} = await compressAndResizeImage(req.file, compressionRate)
+  removeFile(req.file);  // Remove the original file.
+  if (!compressionDone) {
+      removeAllFiles(newFilePaths);
+      res.status(400).send({message: "Could not upload image"});
+      return;
+  }
+  req.body["imageUrl"] = pathToSave;
+  next();
+}
+
 function getStorage(folder: string, filePrefix:string) {
     const storage = multer.diskStorage({
         destination: function (req, file, cb) {
@@ -47,7 +67,7 @@ function getStorage(folder: string, filePrefix:string) {
     return storage;
 }
 
-function uploadFile(req, res, next, storage, compressionRate){
+function uploadFile(req, res, next, storage){
     multer({
         storage: storage,
         limits: {
@@ -70,17 +90,6 @@ function uploadFile(req, res, next, storage, compressionRate){
             res.status(400).send(errorMessage);
             return;
         }
-
-        const {pathToSave, newFilePaths, compressionDone} = await compressAndResizeImage(req.file, compressionRate)
-        removeFile(req.file);  // Remove the original file.
-
-        if (!compressionDone) {
-            removeAllFiles(newFilePaths);
-            res.status(400).send({message: "Could not upload image"});
-            return;
-        }
-        req.body["imageUrl"] = pathToSave;
-
         next();
     })
   }
@@ -150,6 +159,7 @@ return {newFilePaths, compressionDone, pathToSave}
   }
   
   export async function compressImage(filePath, quality, outputPath?) {
+    // quality: 100 best, 0 worst
     const imagemin = require('imagemin');
     const imageminMozjpeg = require('imagemin-mozjpeg');
     const imageminPngquant = require('imagemin-pngquant');

@@ -1,7 +1,9 @@
 import * as express from 'express';
 import isAuthenticated from '../middleware/isAuthenticated';
 import UserService from '../services/UserService';
-import { uploadUserProfileImage } from '../middleware/fileUploads';
+import { uploadUserProfileImage, compressProfileImage } from '../middleware/fileUploads';
+import { cleanAndValidateUserData } from '../middleware/inputValidation';
+import { removeImages } from '../modules/helpers';
 
 function setUpUserRoutes(app){
   const userService = new UserService();
@@ -183,7 +185,7 @@ function setUpUserRoutes(app){
   */
 
   // Create a new user.
-  app.post('/users', (req: express.Request, res: express.Response) => {
+  app.post('/users', cleanAndValidateUserData, (req: express.Request, res: express.Response) => {
     const {companyId, ...userData} = req.body;
     userService.createUser(companyId, userData).then(user => {
       res.json(user)
@@ -248,12 +250,13 @@ app.post('/logout', isAuthenticated, (req, res) => {
   * @apiParam {String} companyDepartment Department which the user belongs to
   */
 
-  app.put('/users/:userId/firstlogin', uploadUserProfileImage, (req, res) => {
+  app.put('/users/:userId/firstlogin', uploadUserProfileImage, cleanAndValidateUserData, compressProfileImage, (req, res) => {
     const userId = req.params.userId;
     const {imageUrl, ...userData} = req.body;
     userService.firstUpdate(userId, userData, imageUrl).then(user => {
       res.json(user);
     }).catch(error => {
+      removeImages(imageUrl);
       const status = error.status? error.status : 500;
       res.status(status).send(error);
     })
@@ -276,22 +279,16 @@ app.post('/logout', isAuthenticated, (req, res) => {
   */
 
   // Update a user with userId
-  app.put('/users/:userId', uploadUserProfileImage, (req, res) => {
+  app.put('/users/:userId', uploadUserProfileImage, cleanAndValidateUserData, compressProfileImage, (req, res) => {
     const userId = req.params.userId;
     const {imageUrl, ...userData} = req.body;
     userService.updateUser(userId, userData, imageUrl).then(user => {
       res.json(user);
     }).catch(error => {
+      removeImages(imageUrl);
       const status = error.status? error.status : 500;
       res.status(status).send(error);
     })
-    // userController.updateUser(req, res).catch(error => {
-    //   console.error("Error in updateUser:", error);
-    //   res.status(500).send({
-    //     type: error.name,
-    //     message: "Error while updating user"
-    //   })
-    // });
   });
 
   /**

@@ -1,8 +1,9 @@
 import * as express from 'express';
 import isAuthenticated from '../middleware/isAuthenticated';
 import EventService from '../services/EventService';
-import { getSortingParams } from '../modules/helpers';
-import { uploadEventCoverImage } from '../middleware/fileUploads';
+import { getSortingParams, removeImages } from '../modules/helpers';
+import { uploadEventCoverImage, compressCoverImage } from '../middleware/fileUploads';
+import { cleanAndValidateEvent } from '../middleware/inputValidation';
 
 function setUpEventRoutes(app) {
   const eventService = new EventService();
@@ -134,11 +135,13 @@ function setUpEventRoutes(app) {
   */
 
   // Create a new event.
-  app.post('/events', uploadEventCoverImage, (req: express.Request, res: express.Response) => {
+  app.post('/events', uploadEventCoverImage, cleanAndValidateEvent, compressCoverImage, 
+  (req: express.Request, res: express.Response) => {
     const {companyId, imageUrl, ...newEvent} = req.body;
     eventService.createEvent(newEvent, companyId, imageUrl).then(event => {
       res.json(event);
     }).catch(error => {
+      removeImages(imageUrl);
       const status = error.status? error.status : 500;
       res.status(status).send(error);
     })
@@ -153,7 +156,7 @@ function setUpEventRoutes(app) {
   */
 
   // Add a user to an Event.
-  app.post('/events/:eventId/users/:userId', (req: express.Request, res: express.Response) => {
+  app.put('/events/:eventId/users/:userId', (req: express.Request, res: express.Response) => {
     const eventId = req.params.eventId;
     const userId = req.params.userId;
     eventService.addEventParticipant(eventId, userId).then(response => {
@@ -181,12 +184,14 @@ function setUpEventRoutes(app) {
   */
 
   // Update an event.
-  app.put('/events/:eventId', uploadEventCoverImage, (req: express.Request, res: express.Response) => {
+  app.put('/events/:eventId', uploadEventCoverImage, cleanAndValidateEvent, compressCoverImage, 
+  (req: express.Request, res: express.Response) => {
     const eventId = req.params.eventId;
     const {imageUrl, ...eventData} = req.body;
     eventService.updateEvent(eventId, eventData, imageUrl).then(event => {
       res.json(event);
     }).catch(error => {
+      removeImages(imageUrl);
       const status = error.status? error.status : 500;
       res.status(status).send(error);
     });

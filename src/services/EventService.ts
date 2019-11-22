@@ -8,7 +8,6 @@ import RequestNotValidError from "../types/errors/RequestNotValidError";
 import {ImageType} from "../types/ImageType";
 import {getPagingResponseMessage, cleanInput, updateEntityFields, getDataUrl, removeImages} from "../modules/helpers";
 import ResourceNotFoundError from "../types/errors/ResourceNotFoundError";
-import {validateEvent} from "../modules/validation";
 import InputNotValidError from "../types/errors/InputNotValidError";
 import ActivityService from "./ActivityService";
 
@@ -105,15 +104,7 @@ export default class EventService {
             throw new ResourceNotFoundError("No company was found for the provided company id");
         }
         
-        const input = cleanInput(eventData);
-        const [inputValid, errorMessage, errorDetails] = validateEvent(input);
-        
-        if (!inputValid) {
-            removeImages(coverImagePath);
-            throw new InputNotValidError(errorMessage, errorDetails);
-        }
-        
-        const event = updateEntityFields(new Event(), input, this.possibleFields);
+        const event = updateEntityFields(new Event(), eventData, this.possibleFields);
         event.company = company;
         event.coverImageUrl = coverImagePath;
         
@@ -154,13 +145,7 @@ export default class EventService {
             throw new ResourceNotFoundError("The event does not exist");
         }
 
-        const input = cleanInput(eventData);
-        const [inputValid, errorMessage, errorDetails] = validateEvent(input);
-        if (!inputValid) {
-            removeImages(coverImagePath);
-            throw new InputNotValidError(errorMessage, errorDetails);
-        }
-        const updatedEvent = updateEntityFields(eventToUpdate, input, this.possibleFields);
+        const updatedEvent = updateEntityFields(eventToUpdate, eventData, this.possibleFields);
 
         let oldFilePath;
         if (coverImagePath) {

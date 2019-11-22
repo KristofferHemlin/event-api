@@ -7,7 +7,11 @@ export function cleanInput(inputObj) {
     let fields = Object.keys(inputObj);
 
     let cleanedObj = fields.reduce((obj: any, key:string) => {
-        obj[key] = inputObj[key].trim();
+        if (!key.toLowerCase().includes("password")) {
+          obj[key] = inputObj[key].trim();
+        } else {
+          obj[key] = inputObj[key];
+        }
         if (obj[key] === "") {
             obj[key] = null;
         }
@@ -136,7 +140,7 @@ export function removeFileFromPath(path){
         let imageString = fs.readFileSync(imagePath, encoding);
         return "data:" + mimeType + ";"+encoding+"," + imageString;
       } catch (error){
-        console.log("Could not read file", imagePath)
+        console.error("Could not read file", imagePath)
         return null;
       }
     }

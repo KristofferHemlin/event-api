@@ -23,63 +23,13 @@ export function validateFields(input, requiredFields) {
 }
 
 export function validateActivity(activity) {
-
-    const requiredFields = ["title", "startTime", "endTime", "location"];
-    let [isValid, detailedMessage] = validateFields(activity, requiredFields)
-
-    if (activity.startTime) {
-        if (!moment(activity.startTime, "YYYY-MM-DD HH:mm", true).isValid()){
-            detailedMessage["startTime"] = "Must have format YYYY-MM-DD HH:mm";
-            isValid = false;
-        }
-    }
-
-    if (activity.endTime) {
-        if (!moment(activity.endTime, "YYYY-MM-DD HH:mm", true).isValid()){
-            detailedMessage["endTime"] = "Must have format YYYY-MM-DD HH:mm";
-            isValid = false;
-        } else {
-            if (!validator.isAfter(activity.endTime, activity.startTime)) {
-                detailedMessage["endTime"] = `Must be after startTime (${activity.startTime})`;
-                isValid = false;
-            }
-        }
-    }
-
-    const errorMessage = createErrorMessage(detailedMessage);
-
-    return [isValid, errorMessage, detailedMessage]
-
+    const dateFormats = ["YYYY-MM-DD HH:mm"];
+    return validateHappening(activity, dateFormats);
 }
 
 export function validateEvent(event) {
-    const requiredFields = ["title", "startTime", "endTime", "location"];
-    let [isValid, detailedMessage] = validateFields(event, requiredFields);
-
     const dateFormats = ["YYYY-MM-DD HH:mm", "YYYY-MM-DD"];
-
-    if (event.startTime) {
-        if (!moment(event.startTime, dateFormats, true).isValid()) {
-            detailedMessage["startTime"] = "Must have format YYYY-MM-DD HH:mm or YYYY-MM-DD";
-            isValid = false;
-        }
-    }
-
-    if (event.endTime) {
-        if (!moment(event.endTime, dateFormats, true).isValid()){
-            detailedMessage["endTime"] = "Must have format YYYY-MM-DD HH:mm";
-            isValid = false;
-        } else {
-            if (!validator.isAfter(event.endTime, event.startTime) && event.startTime !== event.endTime) {
-                detailedMessage["endTime"] = `Must be after startTime (${event.startTime})`;
-                isValid = false;
-            }
-        }
-    }
-
-    const errorMessage = createErrorMessage(detailedMessage);
-
-    return [isValid, errorMessage, detailedMessage]
+    return validateHappening(event, dateFormats);
 }
 
 export function validateUser(user) {
@@ -133,7 +83,7 @@ export function validatePassword(pwd:string, fieldName:string, oldPwd?:string){
 export function createErrorMessage(detailedMessage) {
     let prettyFields = {"firstName": "First Name", "lastName": "Last Name", 
         "phone": "Phone", "email": "Email", "title": "Title",
-        "startTime": "Start time", "endTime": "End time", "location": "Location"}
+        "startTime": "Start Time", "endTime": "End Time", "location": "Location"}
     
     const messageFields = Object.keys(detailedMessage);
     
@@ -148,10 +98,57 @@ export function createErrorMessage(detailedMessage) {
         message += " and "+prettyFields[lastField] + " fields are incorrect"
 
     } else if (messageFields.length === 1) {
-        message = "The "+prettyFields[messageFields[0]]+ " field is incorrect"
+        const field = messageFields[0];
+        message = "The "+prettyFields[field]+ " field is incorrect: "+detailedMessage[field];
     } else {
         message = ""
     }
     
     return message;
+}
+
+function validateHappening(happening, dateFormats) {
+    const requiredFields = ["title", "startTime", "endTime", "location"];
+    let [isValid, detailedMessage] = validateFields(happening, requiredFields);
+
+    const [startTimeValid, startTimeMessage] = validateTime(happening.startTime, dateFormats);
+    if (!startTimeValid) {
+        detailedMessage["startTime"] = startTimeMessage;
+        isValid = false;
+    }
+    const [endTimeValid, endTimeMessage] = validateTime(happening.endTime, dateFormats, happening.startTime);
+    if (!endTimeValid) {
+        detailedMessage["endTime"] = endTimeMessage;
+        isValid = false;
+    }
+
+    const errorMessage = createErrorMessage(detailedMessage);
+
+    return [isValid, errorMessage, detailedMessage]
+}
+
+function validateTime(time, validFormats: string[], earlierTime?) {
+    let message: string;
+    let isValid: boolean = true;
+
+    if (time) {
+        if (!moment(time, validFormats, true).isValid()){
+            message = "Must have format "+validFormats.join(" or ");
+            isValid = false;
+        }
+
+        if (validator.isAfter("1970-01-01", time)) {
+            message = "Must be after 1970-01-01";
+            isValid = false;
+        }
+
+        if (earlierTime) {
+            if (!validator.isAfter(time, earlierTime) && earlierTime !== time) {
+                message = `Must be after Start Time (${earlierTime})`;
+                isValid = false;
+            }
+        }
+    }
+
+    return [isValid, message];
 }

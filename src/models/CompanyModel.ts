@@ -50,7 +50,7 @@ export default class CompanyModel {
             .where("company.id=:companyId", {companyId: companyId})
             .getMany()
             .catch(error => {
-                console.log("Error while fetching company activities")
+                console.error("Error while fetching company activities")
                 return Promise.reject(error);
             });
     }

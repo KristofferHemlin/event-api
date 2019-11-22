@@ -72,7 +72,7 @@ export default class UserModel {
                 return Promise.reject(error);
             })
         } catch (error) {
-            console.log(`Error while fetching participants for ${table}`, error);
+            console.error(`Error while fetching participants for ${table}`, error);
             return Promise.reject(error);
         }
     }

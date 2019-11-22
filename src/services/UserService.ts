@@ -4,7 +4,7 @@ import UserModel from "../models/UserModel";
 import User from "../entities/user.entity";
 import ServerError from "../types/errors/ServerError";
 import { cleanInput, updateEntityFields, deselectFields, getDataUrl, removeImages } from "../modules/helpers";
-import { validateUser, validatePassword } from "../modules/validation";
+import { validatePassword } from "../modules/validation";
 import { ImageType } from "../types/ImageType";
 import InputNotValidError from "../types/errors/InputNotValidError";
 import CompanyModel from "../models/CompanyModel";
@@ -71,12 +71,9 @@ export default class UserService {
         const password = userData.password;
         const input = cleanInput(userData);
         const [pwdValid, errorMessagePwd] = validatePassword(password, "password");
-        const [inputValid, errorMessageUser, errorDetailsUser] = validateUser(input);
 
-        if (!inputValid || !pwdValid) {
-            const errorDetails = errorDetailsUser;
-            errorDetails["password"] = errorMessagePwd?errorMessagePwd: undefined;
-            throw new InputNotValidError(errorMessagePwd+"\n"+errorMessageUser, errorDetails);
+        if (!pwdValid) {
+            throw new InputNotValidError(errorMessagePwd);
         }
 
         const company = await this.companyModel.getCompanyById(companyId);
@@ -138,25 +135,27 @@ export default class UserService {
         }
 
         const newPwd = userData.password;
-        const input = cleanInput(userData);
-
         const [pwdValid, errorMessagePwd] = validatePassword(newPwd, "password");
-        const [inputValid, errorMessageUser, errorDetailsUser] = validateUser(input);
-
         
-        if (!inputValid || !pwdValid) {
-            const errorDetails = errorDetailsUser;
-            errorDetails["password"] = errorMessagePwd?errorMessagePwd: undefined;
+        if (!pwdValid) {
             removeImages(profileImagePath);
-            throw new InputNotValidError(errorMessagePwd+"\n"+errorMessageUser, errorDetails);
+            throw new InputNotValidError(errorMessagePwd);
         }
 
-        const updatedUser = updateEntityFields(user, input, this.possibleFields);
+        let oldFilePath: string;  // Save the old image path so it can be deleted if the update is successfull
+        if (profileImagePath){
+            oldFilePath = user.profileImageUrl;
+        } else {
+            oldFilePath = null
+        }
+
+        const updatedUser = updateEntityFields(user, userData, this.possibleFields);
         updatedUser.signupComplete = true;
-        updatedUser.password = bCrypt.hashSync(input.password, parseInt(process.env.SALT_ROUNDS, 10));
+        updatedUser.password = bCrypt.hashSync(newPwd, parseInt(process.env.SALT_ROUNDS, 10));
         updatedUser.profileImageUrl = profileImagePath;
         
         return await this.userModel.saveUser(updatedUser).then(user => {
+            removeImages(oldFilePath);
             return deselectFields(user, this.userNonReturnableFields);
         }).catch(() => {
             removeImages(profileImagePath);
@@ -173,16 +172,8 @@ export default class UserService {
             removeImages(profileImagePath);
             throw new ResourceNotFoundError("The user does not exist");
         }
-      
-        let input = cleanInput(userData);
-        const [inputValid, errorMessage, errorDetails] = validateUser(input);
-    
-        if (!inputValid) {
-            removeImages(profileImagePath);
-            throw new InputNotValidError(errorMessage, errorDetails);
-        }
         
-        const updatedUser = updateEntityFields(userToUpdate, input, this.possibleFields);
+        const updatedUser = updateEntityFields(userToUpdate, userData, this.possibleFields);
         
         let oldFilePath: string;  // Save the old image path so it can be deleted if the update is successfull
         if (profileImagePath){

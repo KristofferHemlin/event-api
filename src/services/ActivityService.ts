@@ -2,7 +2,6 @@ import EventModel from '../models/EventModel';
 import Activity from '../entities/activity.entity';
 import User from '../entities/user.entity';
 import ActivityUpdateLog from '../entities/activitylog.entity';
-import {validateActivity} from '../modules/validation';
 import { cleanInput, getPagingResponseMessage, updateEntityFields, removeImages, getDataUrl } from '../modules/helpers';
 import ServerError from '../types/errors/ServerError';
 import ResourceNotFoundError from '../types/errors/ResourceNotFoundError';
@@ -99,16 +98,7 @@ export default class ActivityService {
         throw new ResourceNotFoundError('No event could be found for the provided id. No activity created.')
       }
   
-      // Move clean and validate to middleware as well
-      const input = cleanInput(newActivity); 
-      const [inputValid, errorMessage, errorInfo] = validateActivity(input)
-      
-      if (!inputValid) {
-        removeImages(coverImagePath);
-        throw new InputNotValidError(errorMessage, errorInfo)
-      }
-  
-      const activity = updateEntityFields(new Activity(), input, this.possibleFields);
+      const activity = updateEntityFields(new Activity(), newActivity, this.possibleFields);
       activity.event = event;
       activity.company = event.company;
       activity.coverImageUrl = coverImagePath;
@@ -160,15 +150,7 @@ export default class ActivityService {
         throw new ResourceNotFoundError("No activity founs with provided id")
       }
   
-      const input = cleanInput(updatedActivity);
-      const [inputValid, errorMessage, errorInfo] = validateActivity(input);
-  
-      if (!inputValid) {
-        removeImages(coverImagePath);
-        throw new InputNotValidError(errorMessage, errorInfo);
-      }
-  
-      const newActivity = updateEntityFields(activityToUpdate, input, this.possibleFields);
+      const newActivity = updateEntityFields(activityToUpdate, updatedActivity, this.possibleFields);
   
       let oldFileUrl;
       if (coverImagePath) {
