@@ -141,18 +141,18 @@ export default class UserService {
             removeImages(profileImagePath);
             throw new InputNotValidError(errorMessagePwd);
         }
+        const updatedUser = updateEntityFields(user, userData, this.possibleFields);
 
         let oldFilePath: string;  // Save the old image path so it can be deleted if the update is successfull
         if (profileImagePath){
             oldFilePath = user.profileImageUrl;
+            updatedUser.profileImageUrl = profileImagePath;
         } else {
             oldFilePath = null
         }
 
-        const updatedUser = updateEntityFields(user, userData, this.possibleFields);
         updatedUser.signupComplete = true;
         updatedUser.password = bCrypt.hashSync(newPwd, parseInt(process.env.SALT_ROUNDS, 10));
-        updatedUser.profileImageUrl = profileImagePath;
         
         return await this.userModel.saveUser(updatedUser).then(user => {
             removeImages(oldFilePath);
