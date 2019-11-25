@@ -138,7 +138,7 @@ function validateTime(time, validFormats: string[], earlierTime?) {
         }
 
         if (validator.isAfter("1970-01-01", time)) {
-            message = "Must be after 1970-01-01";
+            message = "Date is too long ago";
             isValid = false;
         }
 
