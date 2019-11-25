@@ -3,22 +3,28 @@ import * as multer from 'multer';
 import {ImageType} from "../types/ImageType";
 import { removeAllFiles, removeFile } from '../modules/helpers';
 
-const FILETYPES = ['jpg', 'jpeg', 'png'];
+const IMAGETYPES = ['jpg', 'jpeg', 'png'];
+const FILETYPES = ['csv'];
 const MAXSIZE = 10;
 
 export function uploadActivityCoverImage(req, res, next) {
     const storage = getStorage("public/original", "activityImage");
-    uploadFile(req, res, next, storage); 
+    uploadFile(req, res, next, storage, IMAGETYPES, 'image'); 
 }
 
 export function uploadEventCoverImage(req, res, next) {
   const storage = getStorage("public/original", "eventImage");
-  uploadFile(req, res, next, storage);
+  uploadFile(req, res, next, storage, IMAGETYPES, 'image');
 }
 
 export function uploadUserProfileImage(req, res, next) {
   const storage = getStorage("public/original", "profileImage");
-  uploadFile(req, res, next, storage);
+  uploadFile(req, res, next, storage, IMAGETYPES, 'image');
+}
+
+export function uploadCsvFile(req, res, next) {
+  const storage = getStorage("public/original", "new_file");
+  uploadFile(req, res, next, storage, FILETYPES, "file");
 }
 
 export function processFormDataWithoutFile(req, res, next) {
@@ -67,7 +73,7 @@ function getStorage(folder: string, filePrefix:string) {
     return storage;
 }
 
-function uploadFile(req, res, next, storage){
+function uploadFile(req, res, next, storage, fileTypes, fieldName){
     multer({
         storage: storage,
         limits: {
@@ -76,19 +82,22 @@ function uploadFile(req, res, next, storage){
         },
         fileFilter: (req, file, cb) => {
             // if the file extension is in our accepted list
-            if (FILETYPES.some(ext => file.originalname.toLowerCase().endsWith("." + ext))) {
+            if (fileTypes.some(ext => file.originalname.toLowerCase().endsWith("." + ext))) {
             return cb(null, true);
             }
         
             // otherwise, return error
-            return cb({ message: 'Only ' + FILETYPES.join(", ") + ' files are allowed!', field: "image", code: "NOT_SUPPORTED_TYPE"});
+            return cb({ message: 'Only ' + fileTypes.join(", ") + ' files are allowed!', field: "image", code: "NOT_SUPPORTED_TYPE"});
         }
-    }).single('image')(req, res, async (err) => {
+    }).single(fieldName)(req, res, async (err) => {
         if (err) {
             console.error("Error in multer: ", err);
             const errorMessage = handleMulterError(err);
             res.status(400).send(errorMessage);
             return;
+        }
+        if (req.file) {
+          req.body["fileUrl"] = req.file.path;
         }
         next();
     })

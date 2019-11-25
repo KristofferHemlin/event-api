@@ -137,10 +137,31 @@ export default class UserModel {
     }
 
     saveUser(user: User): Promise<User> {
+        // Upsert (updates if id already exists else insert new)
         return getRepository(User).save(user).catch(error => {
             console.error("Error while saving user:", error);
             return Promise.reject(error);
         })
+    }
+
+    saveUsers(users: User[]): Promise<number> {
+        // Creates user only if email does not already exist.
+        return createQueryBuilder(User)
+            .insert().values(users)
+            .onConflict(`("email") DO NOTHING`)
+            .execute()
+            .then(insertResult => {
+                const numInsterted = insertResult.identifiers.reduce((numRecords, record) => {
+                    if (record) {
+                        numRecords ++;
+                    }
+                    return numRecords;
+                }, 0)
+                return numInsterted;
+            }).catch(error => {
+                console.error("Error while saving multiple users:", error);
+                return Promise.reject(error);
+            })
     }
 
     addPlayerId(playerId: string, user: User) {

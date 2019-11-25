@@ -1,10 +1,14 @@
 import * as bCrypt from 'bcrypt';
+import * as parse from 'csv-parse/lib/sync';
+import * as fs from 'fs';
 
 import UserModel from "../models/UserModel";
 import User from "../entities/user.entity";
+import Company from "../entities/company.entity";
+import Role from "../entities/role.entity";
 import ServerError from "../types/errors/ServerError";
-import { cleanInput, updateEntityFields, deselectFields, getDataUrl, removeImages } from "../modules/helpers";
-import { validatePassword } from "../modules/validation";
+import { cleanInput, updateEntityFields, deselectFields, getDataUrl, removeImages, removeFileFromPath } from "../modules/helpers";
+import { validatePassword, validateUser } from "../modules/validation";
 import { ImageType } from "../types/ImageType";
 import InputNotValidError from "../types/errors/InputNotValidError";
 import CompanyModel from "../models/CompanyModel";
@@ -69,29 +73,86 @@ export default class UserService {
 
     async createUser(companyId: number, userData) {
         const password = userData.password;
-        const input = cleanInput(userData);
         const [pwdValid, errorMessagePwd] = validatePassword(password, "password");
 
         if (!pwdValid) {
             throw new InputNotValidError(errorMessagePwd);
         }
 
-        const company = await this.companyModel.getCompanyById(companyId);
-        const role = await this.generalModel.getRoleFromName("COMPANY_MEMBER");
+        const company = await this.companyModel.getCompanyById(companyId).catch(() => {
+            throw new ServerError("Could not create new user", "Error while fetching company");
+        });
+        const role = await this.generalModel.getRoleFromName("COMPANY_MEMBER").catch(() => {
+            throw new ServerError("Could not create new user", "Error while fetching user role");
+        });
 
         if (!company) {
             throw new ResourceNotFoundError("The company does not exist");
         }
 
-        const user: User = updateEntityFields(new User(), input, this.possibleFields);
+        const user: User = updateEntityFields(new User(), userData, this.possibleFields);
         user.isActive = true;
         user.signupComplete = true;
         user.company = company;
         user.role = role;
-        user.password = bCrypt.hashSync(input.password, parseInt(process.env.SALT_ROUNDS, 10));
+        user.password = bCrypt.hashSync(password, parseInt(process.env.SALT_ROUNDS, 10));
 
         return this.userModel.saveUser(user).catch(() => {
             throw new ServerError("Could not update user");
+        })
+    }
+
+    async uploadUsers(companyId: number, filePath: string, defaultPassword:string) {
+        
+        if (!filePath) {
+            throw new RequestNotValidError("No file provided");
+        }
+        const file = fs.readFileSync(filePath);
+        removeFileFromPath(filePath);
+        
+        const [pwdValid, errorMessagePwd] = validatePassword(defaultPassword, "password");
+        if (!pwdValid) {
+            throw new InputNotValidError(errorMessagePwd);
+        }
+
+        const password = bCrypt.hashSync(defaultPassword, parseInt(process.env.SALT_ROUNDS, 10));
+        
+        if (!companyId) {
+            throw new RequestNotValidError("A company need to be specified");
+        }
+        const company = await this.companyModel.getCompanyById(companyId).catch(() => {
+            throw new ServerError("Could not create new users", "Error while fetching company");
+        });
+        if (!company) {
+            throw new RequestNotValidError("The company does not exist");
+        }
+
+        const role = await this.generalModel.getRoleFromName("COMPANY_MEMBER").catch(() => {
+            throw new ServerError("Could not create new users", "Error while fetching user role");
+        });
+
+        // The columns in the file needs to be exactlty as the User entity fields at the moment.
+        let recordObjects;
+        try {
+            recordObjects = parse(file, {columns: true, skip_empty_lines: true});
+        } catch (error) {
+           throw new RequestNotValidError("Error in file", {type: error.code, column: error.column, record: error.record})
+        }
+        let users;
+        try {
+            users = this.createNewUsers(recordObjects, password, company, role);
+        } catch (error) {
+            return Promise.reject(error);
+        }
+        
+        return this.userModel.saveUsers(users).then(numInserted => {
+            if (numInserted > 0){
+                return {message: `${numInserted} new users created. ${users.length - numInserted} users did already exist`};
+            } else {
+                return {message: "All users already exist"}
+            }
+        }).catch(() => {
+            throw new ServerError("Could not save uploaded users");
         })
     }
 
@@ -223,7 +284,32 @@ export default class UserService {
             })
         }
         return; 
-    } 
-      
-      
+    }
+
+    private createNewUsers(records, password: string, company: Company, role: Role): User[] {
+        let rowCount = 1;
+        let fullErrorMessage = {};
+        let inputValid = true;
+        const users = records.map(record => {
+            const input = cleanInput(record);
+            const [isValid, errorMessage, errorDetails] = validateUser(input);
+            if (!isValid) {
+                fullErrorMessage["Row "+rowCount] = {message: errorMessage, details: errorDetails}
+                inputValid = false;
+            }
+            const user = updateEntityFields(new User(), input, this.possibleFields);
+            user.password = password;
+            user.isActive = true;
+            user.signupComplete = false;
+            user.company = company;
+            user.role = role;
+            rowCount ++;
+            return user;
+        })
+
+        if (!inputValid) {
+            throw new InputNotValidError("One or more rows are incorrect", fullErrorMessage);
+        }
+        return users;
+    }
 }

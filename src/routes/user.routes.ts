@@ -1,7 +1,7 @@
 import * as express from 'express';
 import isAuthenticated from '../middleware/isAuthenticated';
 import UserService from '../services/UserService';
-import { uploadUserProfileImage, compressProfileImage } from '../middleware/fileUploads';
+import { uploadUserProfileImage, compressProfileImage, uploadCsvFile } from '../middleware/fileUploads';
 import { cleanAndValidateUserData } from '../middleware/inputValidation';
 import { removeImages } from '../modules/helpers';
 
@@ -174,7 +174,7 @@ function setUpUserRoutes(app){
   })
 
   /**
-  * @api {post} /user Create a new user profile
+  * @api {post} /users Create a new user profile
   * @apiName PostUser
   * @apiGroup User
   *
@@ -194,6 +194,27 @@ function setUpUserRoutes(app){
       res.status(status).send(error);
     })
   });
+
+  /**
+  * @api {post} /users/upload Create new user from uploaded file (.csv)
+  * @apiDescription Create new user from uploaded file. If an email already exists, the user is not created.
+  * Required file headers: firstName, lastName, email
+  * Optional file headers: phone, companyDepartment, aboutMe, allergiesOrPreferences
+  * @apiName UploadUsers
+  * @apiGroup User
+  *
+  * @apiParam {number} companyId The id of the company the users will belong to.
+  * @apiParam {string} defaultPassword The password for the new users
+  */
+  app.post('/users/upload', uploadCsvFile, (req, res) => {
+    const {companyId, defaultPassword, fileUrl} = req.body;
+    userService.uploadUsers(parseInt(companyId), fileUrl, defaultPassword).then(response => {
+      res.json(response);
+    }).catch(error => {
+      const status = error.status? error.status : 500;
+      res.status(status).send(error);
+    });
+  })
 
     /**
    * @api {post} /users/:userId/playerId
