@@ -2,7 +2,7 @@ import * as express from 'express';
 import isAuthenticated from '../middleware/isAuthenticated';
 import EventService from '../services/EventService';
 import { getSortingParams, removeImages } from '../modules/helpers';
-import { uploadEventCoverImage, compressCoverImage } from '../middleware/fileUploads';
+import { uploadEventCoverImage, compressCoverImage, uploadCsvFile } from '../middleware/fileUploads';
 import { cleanAndValidateEvent } from '../middleware/inputValidation';
 
 function setUpEventRoutes(app) {
@@ -146,6 +146,26 @@ function setUpEventRoutes(app) {
       res.status(status).send(error);
     })
   });
+
+  /**
+  * @api {put} /events/:eventId/users/upload Add users to event from uploaded file (.csv)
+  * Required file headers: email
+  * @apiName UploadUsers
+  * @apiGroup User
+  *
+  * @apiParam {number} eventId The id of the event the users will be added to.
+  */
+
+  app.put('/events/:eventId/users/upload', uploadCsvFile, (req, res) => {
+    const eventId = req.params.eventId;
+    const {fileUrl} = req.body;
+    eventService.addEventParticipants(eventId, fileUrl).then(response => {
+      res.json(response);
+    }).catch(error => {
+      const status = error.status? error.status : 500;
+      res.status(status).send(error);
+    })
+  })
 
   /**
   * @api {post} /event/add-user Add a user to an event

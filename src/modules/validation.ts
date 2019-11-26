@@ -1,6 +1,10 @@
 import validator from 'validator';
 import * as moment from 'moment';
 
+import Event from "../entities/event.entity";
+import User from "../entities/user.entity";
+import Activity from "../entities/activity.entity";
+
 export function validateFields(input, requiredFields) {
     let detailedMessage = {};
     let isValid = true;
@@ -107,6 +111,49 @@ export function createErrorMessage(detailedMessage) {
     return message;
 }
 
+export function validateActivityParticipants(activity: Activity, participants: User[], inputUsers: string[]) {
+    let allUsersValid = true;
+    let invalidUsers = [];
+    participants.forEach(user => {
+        if (!user.events.find(event => { return event.id === activity.event.id })){
+            allUsersValid = false;
+            invalidUsers.push(user.email);
+        }
+    })
+    const userEmail = participants.map(user => {return user.email})
+    const nonUsers = inputUsers.filter(email => {
+        return !userEmail.includes(email);
+    });
+    if (nonUsers.length > 0) {
+        allUsersValid = false;
+    }
+
+    const [errorMessage, errorDetails] = getBulkErrorMessage("activity", invalidUsers, nonUsers)
+    return [allUsersValid, errorMessage, errorDetails]
+}
+
+export function validateEventParticipant(event: Event, participants: User[], inputUsers: string[]) {
+    let allUsersValid = true;
+    let invalidUsers = []
+    participants.forEach(user => {
+        if (user.company.id !== event.company.id){
+        allUsersValid = false;
+        invalidUsers.push(user.email);
+        }
+    })
+
+    const userEmail = participants.map(user => {return user.email})
+    const nonUsers = inputUsers.filter(email => {
+        return !userEmail.includes(email);
+    });
+    if (nonUsers.length > 0) {
+        allUsersValid = false;
+    }
+
+    const [errorMessage, errorDetails] = getBulkErrorMessage("event", invalidUsers, nonUsers)
+    return [allUsersValid, errorMessage, errorDetails]
+}
+
 function validateHappening(happening, dateFormats) {
     const requiredFields = ["title", "startTime", "endTime", "location"];
     let [isValid, detailedMessage] = validateFields(happening, requiredFields);
@@ -152,3 +199,34 @@ function validateTime(time, validFormats: string[], earlierTime?) {
 
     return [isValid, message];
 }
+
+function getBulkErrorMessage(happeningType, invalidUsers, nonUsers) {
+    let errorMessage = "";
+    let errorDetails = {}
+    if (invalidUsers.length > 0) {
+        if (happeningType === "event") {
+            if (invalidUsers.length > 1) {
+                errorMessage += invalidUsers.length+ " users belong to the wrong company. ";
+            } else {
+                errorMessage += invalidUsers.length+ " user belongs to the wrong company. "
+            }
+        } else {
+            if (invalidUsers.length > 1) {
+                errorMessage += invalidUsers.length+ " users are not a participant on the parent event. ";
+            } else {
+                errorMessage += invalidUsers.length+ " user is not a participant on the parent event. "
+            }
+        }
+      errorDetails["nonParticipants"] = invalidUsers;
+    }
+    if (nonUsers.length > 0) {
+        if (nonUsers.length > 1) {
+            errorMessage += nonUsers.length+" emails are not registered.";
+        } else {
+            errorMessage += nonUsers.length+ " email is not registered."
+        }
+      errorDetails["nonUsers"] = nonUsers;
+    }
+  
+    return [errorMessage.trim(), errorDetails]
+  }

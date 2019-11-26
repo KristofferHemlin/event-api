@@ -1,8 +1,11 @@
+import * as parse from 'csv-parse/lib/sync';
+import * as fs from 'fs';
+
 import EventModel from '../models/EventModel';
 import Activity from '../entities/activity.entity';
 import User from '../entities/user.entity';
 import ActivityUpdateLog from '../entities/activitylog.entity';
-import { cleanInput, getPagingResponseMessage, updateEntityFields, removeImages, getDataUrl } from '../modules/helpers';
+import { getPagingResponseMessage, updateEntityFields, removeImages, getDataUrl, removeFileFromPath } from '../modules/helpers';
 import ServerError from '../types/errors/ServerError';
 import ResourceNotFoundError from '../types/errors/ResourceNotFoundError';
 import InputNotValidError from '../types/errors/InputNotValidError';
@@ -10,6 +13,7 @@ import ActivityModel from '../models/ActivityModel';
 import RequestNotValidError from '../types/errors/RequestNotValidError';
 import UserModel from '../models/UserModel';
 import {ImageType} from "../types/ImageType";
+import { validateActivityParticipants } from '../modules/validation';
 
 export default class ActivityService {
     private possibleFields = ["title", "description", "startTime", "endTime", "location", "goodToKnow"];
@@ -108,6 +112,46 @@ export default class ActivityService {
           removeImages(coverImagePath);
           throw new ServerError("Could not create activity.", "Error while trying to save new activity");
         })
+    }
+
+    async addParticipants(activityId: number, filePath: string) {
+
+      const activity = await this.activityModel.getActivityById(activityId, ["participants", "event"]).catch(() => {
+        throw new ServerError("Could not add activity participants", "Error while fetching activity");
+      })
+
+      if (!activity) {
+        throw new RequestNotValidError("The activity does not exist");
+      }
+    
+      const file = fs.readFileSync(filePath);
+      removeFileFromPath(filePath);
+      
+      let recordObjects;
+      try {
+          recordObjects = parse(file, {columns: true, skip_empty_lines: true});
+      } catch (error) {
+          throw new RequestNotValidError("Error in file", {type: error.code, column: error.column, record: error.record})
+      }
+
+      const userInfo = recordObjects.map(record => {
+        return record.email;
+      })
+      const users = await this.userModel.getUsersByEmail(userInfo, [], ["events"]).catch(() => {
+        throw new ServerError("Could not add activity participants", "Error while fetching users");
+      });
+
+      const [usersValid, errorMessage, errorDetails] = validateActivityParticipants(activity, users, userInfo);
+      if (!usersValid) {
+        throw new InputNotValidError(errorMessage, errorDetails);
+      }
+
+      activity.participants = activity.participants.concat(users);
+      return this.activityModel.saveActivity(activity).then(() => {
+        return {message: "Participants added"}
+      }).catch(() => {
+        throw new ServerError("Could not add activity participants", "Error while saving activity");
+      })
     }
   
     async addParticipant(activityId: number, userId: number){

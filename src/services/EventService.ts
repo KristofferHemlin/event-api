@@ -1,3 +1,6 @@
+import * as parse from 'csv-parse/lib/sync';
+import * as fs from 'fs';
+
 import Event from "../entities/event.entity";
 import User from "../entities/user.entity";
 import EventModel from "../models/EventModel";
@@ -6,7 +9,8 @@ import CompanyModel from "../models/CompanyModel";
 import ServerError from "../types/errors/ServerError";
 import RequestNotValidError from "../types/errors/RequestNotValidError";
 import {ImageType} from "../types/ImageType";
-import {getPagingResponseMessage, cleanInput, updateEntityFields, getDataUrl, removeImages} from "../modules/helpers";
+import {getPagingResponseMessage, updateEntityFields, getDataUrl, removeImages, removeFileFromPath} from "../modules/helpers";
+import {validateEventParticipant} from "../modules/validation";
 import ResourceNotFoundError from "../types/errors/ResourceNotFoundError";
 import InputNotValidError from "../types/errors/InputNotValidError";
 import ActivityService from "./ActivityService";
@@ -113,6 +117,43 @@ export default class EventService {
         }).catch(() => {
             removeImages(coverImagePath);
             throw new ServerError("Could not create new event")
+        })
+    }
+
+    async addEventParticipants(eventId, filePath) {
+        const event = await this.eventModel.getEventById(eventId, ["participants", "company"]).catch(() => {
+            throw new ServerError("Could not add participants to event", "Error while fetching event");
+        })
+        if (!event) {
+            throw new RequestNotValidError("The event does not exist");
+        }
+
+        const file = fs.readFileSync(filePath);
+        removeFileFromPath(filePath);
+
+        let recordObjects;
+        try {
+            recordObjects = parse(file, {columns: true, skip_empty_lines: true});
+        } catch (error) {
+            throw new RequestNotValidError("Error in file", {type: error.code, column: error.column, record: error.record})
+        }
+        const userInfo = recordObjects.map(record => {
+            return record.email;
+          })
+        const users = await this.userModel.getUsersByEmail(userInfo, [], ["company"]).catch(() => {
+            throw new ServerError("Could not add participants to event", "Error while fetching users");
+        });
+
+        const [usersValid, errorMessage, errorDetails] = validateEventParticipant(event, users, userInfo)
+        if (!usersValid) {
+            throw new InputNotValidError(errorMessage, errorDetails);
+        }
+
+        event.participants = event.participants.concat(users);
+        return this.eventModel.saveEvent(event).then(() => {
+            return {message: "Participants added to event"}
+        }).catch(() => {
+            throw new ServerError("Could not add participants to event", "Error while saving event");
         })
     }
 

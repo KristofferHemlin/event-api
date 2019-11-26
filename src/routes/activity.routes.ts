@@ -1,6 +1,6 @@
 import * as express from 'express';
 import isAuthenticated from '../middleware/isAuthenticated';
-import {uploadActivityCoverImage, compressCoverImage} from '../middleware/fileUploads'
+import {uploadActivityCoverImage, compressCoverImage, uploadCsvFile} from '../middleware/fileUploads'
 import ActivityService from "../services/ActivityService";
 import ApplicationError from "../types/errors/ApplicationError";
 import Activity from '../entities/activity.entity';
@@ -121,13 +121,33 @@ function setUpActivityRoutes(app) {
   */
 
   app.post('/activities', uploadActivityCoverImage, cleanAndValidateActivity, compressCoverImage,
-  async (req, res) => {
+  (req, res) => {
     const {eventId, imageUrl, ...newActivity} = req.body;
     
     activityService.createActivity(newActivity, eventId, imageUrl).then( activity => {
       res.json(activity);
     }).catch((error: ApplicationError) => {
       removeImages(imageUrl);
+      const status = error.status? error.status : 500;
+      res.status(status).send(error);
+    });
+  })
+
+  /**
+  * @api {put} /activities/:activityId/users/upload Add users to activity from uploaded file (.csv)
+  * Required file headers: email
+  * @apiName UploadUsers
+  * @apiGroup User
+  *
+  * @apiParam {number} activity The id of the activity the users will be added to.
+  */
+
+  app.put('/activities/:activityId/users/upload', uploadCsvFile, (req, res) => {
+    const activityId = req.params.activityId;
+    const {fileUrl} = req.body;
+    activityService.addParticipants(activityId, fileUrl).then(response => {
+      res.json(response);
+    }).catch(error => {
       const status = error.status? error.status : 500;
       res.status(status).send(error);
     });

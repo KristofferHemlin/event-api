@@ -28,6 +28,9 @@ export default class UserModel {
         return this.getUserBy("resetPwdToken", token, additionalFields, additionalRelations);
     }
 
+    getUsersByEmail(emails: string[], additionalFields: string[]=[], additionalRelations: string[]=[]):Promise<User[]> {
+        return this.getUsersBy("email", emails, additionalFields, additionalRelations)
+    }
     
     // Find a good term for type for activities and events
     getUsersOn(relationType: string, relationId: number, additionalRelations: string[]=[], sortColumn="id", sortOrder="ASC"): Promise<User[]> {
@@ -217,6 +220,26 @@ export default class UserModel {
                 });
         } catch (error) {
             console.error("Error when fetching user:", error);
+            return Promise.reject(error);
+        }
+    }
+
+    private getUsersBy(type: string, typeIdentifiers: string[], additionalFields: string[]=[], additionalRelations: string[]=[]): Promise<User[]> {
+        try {
+            let queryBuilder = getRepository(User).createQueryBuilder();
+            additionalFields.forEach(field => {
+                queryBuilder.addSelect("User."+field)});
+            additionalRelations.forEach(relation => {
+                queryBuilder.leftJoinAndSelect("User."+relation, relation)
+            });
+            return queryBuilder.where(`User.${type} IN (:...identifiers)`, {identifiers: typeIdentifiers})
+                .getMany()
+                .catch(error => {
+                    console.error(`Error while fetching user by ${type}:`, error);
+                    return Promise.reject(error);
+                })
+        } catch (error) {
+            console.log("Error when fetching user:", error);
             return Promise.reject(error);
         }
     }
