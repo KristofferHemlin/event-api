@@ -146,7 +146,9 @@ export default class UserService {
         }
         
         return this.userModel.saveUsers(users).then(numInserted => {
-            if (numInserted > 0){
+            if (numInserted > 0 && users.length === numInserted){
+                return {message: `${numInserted} new users created`};
+            } else if (numInserted > 0) {
                 return {message: `${numInserted} new users created. ${users.length - numInserted} users did already exist`};
             } else {
                 return {message: "All users already exist"}
