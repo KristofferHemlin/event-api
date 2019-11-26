@@ -148,7 +148,7 @@ export default class UserModel {
         // Creates user only if email does not already exist.
         return createQueryBuilder(User)
             .insert().values(users)
-            .onConflict(`("email") DO NOTHING`)
+            //.onConflict(`("email") DO NOTHING`) // TODO: Add when db has unique constraint
             .execute()
             .then(insertResult => {
                 const numInsterted = insertResult.identifiers.reduce((numRecords, record) => {
