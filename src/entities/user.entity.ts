@@ -6,35 +6,34 @@ import {
   ManyToMany,
   CreateDateColumn,
   UpdateDateColumn,
-  OneToOne,
-  JoinColumn,
   JoinTable,
   OneToMany,
-} from 'typeorm';
+  Unique
+} from "typeorm";
 
-import Company from './company.entity';
-import Role from './role.entity';
-import Event from './event.entity';
-import Activity from './activity.entity';
-import PlayerId from './playerId.entity';
+import Company from "./company.entity";
+import Role from "./role.entity";
+import Event from "./event.entity";
+import Activity from "./activity.entity";
+import PlayerId from "./playerId.entity";
 
 @Entity()
+@Unique(["email"])
 class User {
-
   @PrimaryGeneratedColumn()
   id: number;
 
-  @CreateDateColumn({type: "timestamp"})
+  @CreateDateColumn({ type: "timestamp" })
   createdAt: Date;
 
-  @UpdateDateColumn({type: "timestamp"})
+  @UpdateDateColumn({ type: "timestamp" })
   updatedAt: Date;
 
   @Column({ nullable: true })
-  profileImageUrl: string;  
+  profileImageUrl: string;
 
   @Column({
-    length: 100,
+    length: 100
   })
   firstName: string;
 
@@ -43,7 +42,7 @@ class User {
   })
   lastName: string;
 
-  @Column({nullable: true})
+  @Column({ nullable: true })
   phone: string;
 
   @Column()
@@ -61,38 +60,55 @@ class User {
   @Column({ nullable: true })
   allergiesOrPreferences: string;
 
-  @Column({select: false})
+  @Column({ select: false })
   isActive: boolean;
 
-  @Column({ select: false })  
+  @Column({ select: false })
   password: string;
 
-  @Column({select: false, nullable: true})
+  @Column({ select: false, nullable: true })
   resetPwdToken: string;
 
-  @Column({select: false, nullable: true, type: "timestamp"})
+  @Column({ select: false, nullable: true, type: "timestamp" })
   resetPwdExpireAt: Date;
 
-  @Column({select: false, nullable: true})
-  refreshToken: string
+  @Column({ select: false, nullable: true })
+  refreshToken: string;
 
-  @ManyToOne(type => Role, role => role.users, {cascade: true, nullable: false})
+  @ManyToOne(
+    type => Role,
+    role => role.users,
+    { cascade: true, nullable: false }
+  )
   role: Role;
 
-  @ManyToOne(type => Company, company => company.employees, {cascade: true, nullable: false, onDelete: "CASCADE"})
+  @ManyToOne(
+    type => Company,
+    company => company.employees,
+    { cascade: true, nullable: false, onDelete: "CASCADE" }
+  )
   company: Company;
 
-  @ManyToMany(type => Event, event => event.participants, {cascade: true})
+  @ManyToMany(
+    type => Event,
+    event => event.participants,
+    { cascade: true }
+  )
   @JoinTable()
   events: Event[];
 
-  @ManyToMany(type => Activity, activity => activity.participants)
+  @ManyToMany(
+    type => Activity,
+    activity => activity.participants
+  )
   @JoinTable()
   activities: Activity[];
 
-  @OneToMany(type => PlayerId, playerId => playerId.user)
+  @OneToMany(
+    type => PlayerId,
+    playerId => playerId.user
+  )
   playerIds: PlayerId[];
-
 }
 
 export default User;
